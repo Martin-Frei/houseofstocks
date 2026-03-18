@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Preise — HouseofStocks{% endblock %}
+{% block nav_preise %}active{% endblock %}
+
+{% block content %}
+<div class="pricing-wrap">
+
+  {# ── BETA HINWEIS ──────────────────────────────────────────────────────── #}
+  <div class="beta-bar">
+    <span class="beta-badge">BETA</span>
+    <span class="beta-text">Preise gültig ab März 2026 — Änderungen vorbehalten</span>
+  </div>
+
+  {# ── HEADER ────────────────────────────────────────────────────────────── #}
+  <div class="pricing-header">
+    <h1 class="pricing-title">Einfache Preise.<br><em>Klarer Mehrwert.</em></h1>
+    <p class="pricing-sub">Starte kostenlos — upgrade wenn du mehr brauchst.</p>
+  </div>
+
+  {# ── MONATLICH / JÄHRLICH TOGGLE ───────────────────────────────────────── #}
+  <div class="billing-toggle">
+    <span class="billing-label">ZAHLWEISE</span>
+    <div class="billing-btns">
+      <button class="billing-btn active" onclick="setBilling('monthly', this)">Monatlich</button>
+      <button class="billing-btn" onclick="setBilling('yearly', this)">Jährlich</button>
+    </div>
+    <span class="save-badge" id="save-badge">2 MONATE GRATIS</span>
+  </div>
+
+  {# ── KARTEN ────────────────────────────────────────────────────────────── #}
+  <div class="pricing-cards">
+
+    {# FREE #}
+    <div class="pcard">
+      <div class="pcard-tier">— STUFE 01</div>
+      <div class="pcard-name">Free</div>
+      <p class="pcard-desc">Für Einsteiger die einen ersten Blick auf die Märkte werfen wollen.</p>
+      <div class="pcard-price">
+        <span class="price-amount">€0</span>
+        <span class="price-period">/Monat</span>
+      </div>
+      <div class="price-note">&nbsp;</div>
+      <ul class="pcard-features">
+        <li class="feat feat--yes">StockPredict: gestrige Vorhersagen <span class="feat-tag">VERZÖGERT</span></li>
+        <li class="feat feat--yes">GMM: News älter als 12 Stunden <span class="feat-tag">VERZÖGERT</span></li>
+        <li class="feat feat--no">Aktuelle Prognosen</li>
+        <li class="feat feat--no">Holy Grail Signale</li>
+        <li class="feat feat--no">Keyword-Suche</li>
+      </ul>
+      <a href="{% url 'account_signup' %}" class="pcard-btn pcard-btn--free">Kostenlos starten</a>
+    </div>
+
+    {# PRO #}
+    <div class="pcard pcard--featured">
+      <div class="pcard-popular">BELIEBT</div>
+      <div class="pcard-tier">— STUFE 02</div>
+      <div class="pcard-name">Pro</div>
+      <p class="pcard-desc">Für aktive Anleger die tagesaktuelle Signale und Live-Stimmung brauchen.</p>
+      <div class="pcard-price">
+        <span class="price-amount" id="pro-amount">€19</span>
+        <span class="price-period" id="pro-period">/Monat</span>
+      </div>
+      <div class="price-note" id="pro-note">&nbsp;</div>
+      <ul class="pcard-features">
+        <li class="feat feat--yes">StockPredict: heutige Vorhersagen</li>
+        <li class="feat feat--yes">GMM: News in Echtzeit</li>
+        <li class="feat feat--yes">Alle Free-Inhalte inklusive</li>
+        <li class="feat feat--no">Holy Grail Signale</li>
+        <li class="feat feat--no">Keyword-Suche</li>
+      </ul>
+      {# TODO V2: Stripe Checkout Link hier einfügen #}
+      <a href="{% url 'account_signup' %}" class="pcard-btn pcard-btn--pro">Pro starten</a>
+    </div>
+
+    {# PREMIUM #}
+    <div class="pcard">
+      <div class="pcard-tier">— STUFE 03</div>
+      <div class="pcard-name">Premium</div>
+      <p class="pcard-desc">Für ernsthafte Marktteilnehmer die nur die stärksten Signale wollen.</p>
+      <div class="pcard-price">
+        <span class="price-amount" id="prem-amount">€99</span>
+        <span class="price-period" id="prem-period">/Monat</span>
+      </div>
+      <div class="price-note" id="prem-note">&nbsp;</div>
+      <ul class="pcard-features">
+        <li class="feat feat--yes">Holy Grail Signale <span class="feat-tag">NUR STÄRKSTE</span></li>
+        <li class="feat feat--yes">GMM: Keyword-Suche in Echtzeit</li>
+        <li class="feat feat--yes">Alle Pro-Inhalte inklusive</li>
+        <li class="feat feat--yes">Prioritäts-Support</li>
+        <li class="feat feat--yes">Früher Zugang zu neuen Features</li>
+      </ul>
+      {# TODO V2: Stripe Checkout Link hier einfügen #}
+      <a href="{% url 'account_signup' %}" class="pcard-btn pcard-btn--premium">Premium starten</a>
+    </div>
+
+  </div>
+
+  <p class="pricing-footer-note">
+    Alle Preise inkl. MwSt. · Monatlich kündbar · Keine versteckten Kosten ·
+    <a href="mailto:kontakt@houseofstocks.dev">Fragen?</a>
+  </p>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Monatlich / Jährlich Toggle
+// TODO V2: Stripe Checkout URLs hier je nach Billing-Modus anpassen
+function setBilling(mode, btn) {
+  document.querySelectorAll('.billing-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const badge = document.getElementById('save-badge');
+  if (mode === 'yearly') {
+    document.getElementById('pro-amount').textContent = '€199';
+    document.getElementById('pro-period').textContent = '/Jahr';
+    document.getElementById('pro-note').innerHTML = '<span class="note-save">statt €228 — 2 Monate gratis</span>';
+    document.getElementById('prem-amount').textContent = '€990';
+    document.getElementById('prem-period').textContent = '/Jahr';
+    document.getElementById('prem-note').innerHTML = '<span class="note-save">statt €1.188 — 2 Monate gratis</span>';
+    badge.classList.add('visible');
+  } else {
+    document.getElementById('pro-amount').textContent = '€19';
+    document.getElementById('pro-period').textContent = '/Monat';
+    document.getElementById('pro-note').innerHTML = '&nbsp;';
+    document.getElementById('prem-amount').textContent = '€99';
+    document.getElementById('prem-period').textContent = '/Monat';
+    document.getElementById('prem-note').innerHTML = '&nbsp;';
+    badge.classList.remove('visible');
+  }
+}
+</script>
+{% endblock %}

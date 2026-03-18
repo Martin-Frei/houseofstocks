@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}HouseofStocks — KI-gestützte Marktanalyse{% endblock %}
+
+{% block ticker %}
+<div class="ticker">
+  <div class="ticker-inner" id="ticker-inner">
+    {% for item in ticker_data %}
+      <span class="tick-item">
+        <span class="tick-sym">{{ item.symbol }}</span>
+        <span class="tick-val">{{ item.value }}</span>
+        <span class="tick-{{ item.direction }}">{{ item.change }}</span>
+      </span>
+    {% empty %}
+      {# Fallback statische Daten wenn keine Live-Daten vorhanden #}
+      <span class="tick-item"><span class="tick-sym">DAX</span><span class="tick-val">—</span></span>
+      <span class="tick-item"><span class="tick-sym">S&P 500</span><span class="tick-val">—</span></span>
+      <span class="tick-item"><span class="tick-sym">STIMMUNG</span><span class="tick-val">Wird geladen…</span></span>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{# ── HERO ────────────────────────────────────────────────────────────────── #}
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <div class="tag-dot"></div>
+      <span class="tag-text">BETA — LIVE SEIT MÄRZ 2026</span>
+    </div>
+    <h1 class="hero-title">
+      Märkte verstehen.<br><em>Entscheidungen treffen.</em>
+    </h1>
+    <p class="hero-sub">
+      KI-gestützte Marktanalyse in Echtzeit. Globale Nachrichtenstimmung,
+      Bankaktien-Prognosen und makroökonomische Signale — auf einer Plattform.
+    </p>
+    <div class="hero-cta">
+      <a href="{% url 'account_signup' %}" class="btn btn--primary">Kostenlos starten</a>
+      <a href="#" class="btn btn--secondary">Live-Demo ansehen</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="stat-num">100k+</div>
+        <div class="stat-label">NACHRICHTEN / TAG</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-num">12</div>
+        <div class="stat-label">BANKAKTIEN</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">LIVE-ANALYSE</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-num">4+ J.</div>
+        <div class="stat-label">BACKTEST-DATEN</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── FEATURES ────────────────────────────────────────────────────────────── #}
+<section class="section">
+  <div class="section-inner">
+    <div class="section-label">— FUNKTIONEN</div>
+    <h2 class="section-title">Zwei Systeme.<br>Ein Ziel.</h2>
+    <p class="section-sub">
+      Entwickelt aus echten ML-Projekten — nicht als Demo,
+      sondern als produktive Systeme die täglich laufen.
+    </p>
+    <div class="feature-cards">
+      <div class="fcard">
+        <div class="fcard-icon">◎</div>
+        <div class="fcard-title">Global Market Mood</div>
+        <p class="fcard-text">
+          Stündliche Sentiment-Analyse von über 100.000 Nachrichtenartikeln weltweit.
+          Jede Meldung wird automatisch klassifiziert und bewertet.
+        </p>
+        <span class="fcard-tag">LIVE</span>
+      </div>
+      <div class="fcard">
+        <div class="fcard-icon">▲</div>
+        <div class="fcard-title">StockPredict V2</div>
+        <p class="fcard-text">
+          LSTM + XGBoost Ensemble für 12 Bankaktien. Backtest über 4 Jahre:
+          ~242% Portfolio-Rendite, Sharpe ~6.76, maximaler Drawdown -7.3%.
+        </p>
+        <span class="fcard-tag">PAPER TRADING</span>
+      </div>
+      <div class="fcard">
+        <div class="fcard-icon">◈</div>
+        <div class="fcard-title">Makro-Signale</div>
+        <p class="fcard-text">
+          SPX, XLF, VIX, DXY und weitere Indizes fließen automatisch
+          in die Prognose-Pipeline ein. Tägliche Routinen, wöchentliche Updates.
+        </p>
+        <span class="fcard-tag">AUTOMATISIERT</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── WAITLIST ────────────────────────────────────────────────────────────── #}
+<section class="waitlist">
+  <div class="waitlist-inner">
+    <h2 class="waitlist-title">Früh dabei sein.</h2>
+    <p class="waitlist-sub">
+      Trage dich in die Warteliste ein und erhalte Zugang zur Beta —
+      inklusive kostenlosem Pro-Monat beim Launch.
+    </p>
+    <form class="waitlist-form" method="post" action="{% url 'core:waitlist' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <input
+          type="email"
+          name="email"
+          class="form-input"
+          placeholder="deine@email.de"
+          required
+        >
+        <button type="submit" class="form-btn">Eintragen</button>
+      </div>
+      <p class="form-note">Kein Spam. Nur der Launch-Termin und dein Zugangscode.</p>
+    </form>
+  </div>
+</section>
+
+{% endblock %}
