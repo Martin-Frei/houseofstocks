@@ -1,9 +1,30 @@
-
+# Python
 venv/
-.env
 *.pyc
+*.pyo
+*.pyd
 __pycache__/
-staticfiles/
-db.sqlite3
+*.egg-info/
+dist/
+build/
 
+# Django
+.env
+db.sqlite3
+media/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dokumentation (lokal)
 A_documntation/
