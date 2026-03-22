@@ -197,8 +197,47 @@ def get_global_mood() -> dict:
         return {}
 
 
+def get_index_prices() -> list:
+    """Holt Index Kurse aus ohlcv_data Tabelle (SPX, XLF, VIX, DXY)"""
+    try:
+        r = httpx.get(
+            f"{settings.SPV2_SUPABASE_URL}/rest/v1/ohlcv_data",
+            headers={
+                "apikey": settings.SPV2_SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {settings.SPV2_SUPABASE_ANON_KEY}",
+            },
+            params={
+                "select": "Symbol,Close,Date",
+                "Symbol": "in.(SPX,XLF,VIX,DXY)",
+                "order": "Date.desc",
+                "limit": "8"  # 2 pro Symbol für neuestes Datum
+            },
+            timeout=5.0
+        )
+        rows = r.json() if r.status_code == 200 else []
+
+        # Neuesten Wert pro Symbol
+        seen = {}
+        for row in rows:
+            sym = row.get('Symbol')
+            if sym and sym not in seen:
+                price = row.get('Close')
+                seen[sym] = {
+                    "type":      "stock",
+                    "symbol":    sym,
+                    "value":     f"${price:.2f}" if price else "—",
+                    "direction": "",
+                    "url":       None,
+                }
+        return list(seen.values())
+
+    except Exception as e:
+        print(f"[TICKER] Index prices error: {e}")
+        return []
+
+
 def get_ticker_data() -> list:
-    stocks = get_stock_prices()
+    stocks = get_stock_prices() + get_index_prices()  # ← Indizes dazu
     news   = get_zone_news()
     mood   = get_global_mood()
 
@@ -206,7 +245,6 @@ def get_ticker_data() -> list:
     stock_iter = iter(stocks)
 
     for i, news_item in enumerate(news):
-        # Nach jeder 3. News 2 Aktien einfügen
         if i % 3 == 0:
             for _ in range(2):
                 try:
@@ -214,11 +252,8 @@ def get_ticker_data() -> list:
                 except StopIteration:
                     pass
         ticker.append(news_item)
-        # Mood nach der 5. News
         if i == 4 and mood:
             ticker.append(mood)
 
-    # Restliche Aktien am Ende
     ticker.extend(list(stock_iter))
-
     return ticker
