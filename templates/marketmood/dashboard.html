@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Marktlage — HouseofStocks{% endblock %}
+{% block nav_mood %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.mood-page { max-width: 1200px; margin: 0 auto; padding: 2.5rem; }
+
+.mood-header { margin-bottom: 2.5rem; }
+.mood-header h1 { font-family: 'Instrument Serif', serif; font-size: 2.2rem; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+.mood-header h1 em { color: var(--gold); font-style: italic; }
+.mood-header p { font-size: 0.85rem; color: var(--text3); letter-spacing: 0.04em; font-family: 'DM Mono', monospace; }
+
+/* MAP */
+.map-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
+.map-legend { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+.legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.legend-dot--bull { background: #4a9e6a; }
+.legend-dot--bear { background: #c95555; }
+.legend-dot--neu { background: #4a7eb5; }
+.legend-dot--none { background: var(--border2); }
+
+/* MAP TOOLTIP */
+#map-tooltip { display: none; position: absolute; background: var(--bg); border: 0.5px solid var(--border2); border-radius: 4px; padding: 8px 12px; font-size: 12px; pointer-events: none; z-index: 100; }
+#tooltip-zone { font-weight: 500; color: var(--text); font-family: 'DM Mono', monospace; }
+#tooltip-score { color: var(--text2); margin-top: 2px; font-size: 11px; }
+
+/* ZONE BUTTONS */
+.zones-section { margin-bottom: 2rem; }
+.zones-region-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 0.75rem; margin-top: 1.5rem; }
+.zones-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.zone-btn { padding: 0.4rem 0.85rem; border-radius: 3px; font-size: 0.75rem; font-family: 'DM Mono', monospace; border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em; }
+.zone-btn:hover:not(:disabled) { border-color: var(--gold-dim); color: var(--text); }
+.zone-btn.bull { border-color: #2a5e3a; color: #4a9e6a; background: rgba(74,158,106,0.08); }
+.zone-btn.bull:hover { background: rgba(74,158,106,0.15); }
+.zone-btn.bear { border-color: #5e2a2a; color: #c95555; background: rgba(201,85,85,0.08); }
+.zone-btn.bear:hover { background: rgba(201,85,85,0.15); }
+.zone-btn.neu { border-color: #2a3e5e; color: #4a7eb5; background: rgba(74,126,181,0.08); }
+.zone-btn.neu:hover { background: rgba(74,126,181,0.15); }
+.zone-btn.active-zone { border-color: var(--gold) !important; color: var(--gold) !important; }
+.zone-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.zone-score { font-size: 0.65rem; margin-left: 0.35rem; opacity: 0.8; }
+
+/* ZONE PANEL */
+#zone-panel { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 8px; padding: 2rem; margin-bottom: 2rem; display: none; }
+.zone-loading { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text3); text-align: center; padding: 2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mood-page">
+
+  <div class="mood-header">
+    <h1>Global <em>Market Mood</em></h1>
+    <p>SENTIMENT ANALYSIS · {{ active_zones|length }} ACTIVE REGIONS · UPDATED HOURLY</p>
+  </div>
+
+  {# ── WELTKARTE ──────────────────────────────────────────── #}
+  <div class="map-card">
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot legend-dot--bull"></div>BULLISH</div>
+      <div class="legend-item"><div class="legend-dot legend-dot--bear"></div>BEARISH</div>
+      <div class="legend-item"><div class="legend-dot legend-dot--neu"></div>NEUTRAL</div>
+      <div class="legend-item"><div class="legend-dot legend-dot--none"></div>KEINE DATEN</div>
+    </div>
+    {% include "marketmood/partials/world_map.html" %}
+  </div>
+
+  {# ── ZONEN BUTTONS ──────────────────────────────────────── #}
+  <div class="zones-section">
+
+    <div class="zones-region-label">— EUROPA</div>
+    <div class="zones-row">
+      {% for zone_key, zone in zones.items %}
+        {% if zone_key in "DACH,Western Europe,Northern Europe,Southern Europe,Eastern Europe,Balkans,Baltic States" %}
+        <button onclick="showZone('{{ zone_key }}')"
+          class="zone-btn {% if zone.active %}{% if zone.mood == 'bullish' %}bull{% elif zone.mood == 'bearish' %}bear{% else %}neu{% endif %}{% endif %}"
+          {% if not zone.active %}disabled{% endif %}
+          data-zone="{{ zone_key }}">
+          {{ zone.label }}
+          {% if zone.active %}<span class="zone-score">{% if zone.score >= 0 %}+{% endif %}{{ zone.score|floatformat:2 }}</span>{% endif %}
+        </button>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="zones-region-label">— AMERICAS</div>
+    <div class="zones-row">
+      {% for zone_key, zone in zones.items %}
+        {% if zone_key in "USA,Canada,Central America,Caribbean,Andean States,Brazil,Southern Cone" %}
+        <button onclick="showZone('{{ zone_key }}')"
+          class="zone-btn {% if zone.active %}{% if zone.mood == 'bullish' %}bull{% elif zone.mood == 'bearish' %}bear{% else %}neu{% endif %}{% endif %}"
+          {% if not zone.active %}disabled{% endif %}
+          data-zone="{{ zone_key }}">
+          {{ zone.label }}
+          {% if zone.active %}<span class="zone-score">{% if zone.score >= 0 %}+{% endif %}{{ zone.score|floatformat:2 }}</span>{% endif %}
+        </button>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="zones-region-label">— ASIA & OCEANIA</div>
+    <div class="zones-row">
+      {% for zone_key, zone in zones.items %}
+        {% if zone_key in "China,Japan,India,Southeast Asia,Korea & Taiwan,Central Asia,Oceania" %}
+        <button onclick="showZone('{{ zone_key }}')"
+          class="zone-btn {% if zone.active %}{% if zone.mood == 'bullish' %}bull{% elif zone.mood == 'bearish' %}bear{% else %}neu{% endif %}{% endif %}"
+          {% if not zone.active %}disabled{% endif %}
+          data-zone="{{ zone_key }}">
+          {{ zone.label }}
+          {% if zone.active %}<span class="zone-score">{% if zone.score >= 0 %}+{% endif %}{{ zone.score|floatformat:2 }}</span>{% endif %}
+        </button>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="zones-region-label">— AFRICA & MIDDLE EAST</div>
+    <div class="zones-row">
+      {% for zone_key, zone in zones.items %}
+        {% if zone_key in "North Africa,West Africa,East Africa,Southern Africa,Middle East,Gulf States,Russia & CIS" %}
+        <button onclick="showZone('{{ zone_key }}')"
+          class="zone-btn {% if zone.active %}{% if zone.mood == 'bullish' %}bull{% elif zone.mood == 'bearish' %}bear{% else %}neu{% endif %}{% endif %}"
+          {% if not zone.active %}disabled{% endif %}
+          data-zone="{{ zone_key }}">
+          {{ zone.label }}
+          {% if zone.active %}<span class="zone-score">{% if zone.score >= 0 %}+{% endif %}{{ zone.score|floatformat:2 }}</span>{% endif %}
+        </button>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+  </div>
+
+  {# ── ZONE DETAIL PANEL ──────────────────────────────────── #}
+  <div id="zone-panel">
+    <div id="zone-panel-content">
+      <p class="zone-loading">Zone wird geladen...</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showZone(zoneKey) {
+  const panel   = document.getElementById('zone-panel');
+  const content = document.getElementById('zone-panel-content');
+
+  // Active Button markieren
+  document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active-zone'));
+  const activeBtn = document.querySelector(`[data-zone="${zoneKey}"]`);
+  if (activeBtn) activeBtn.classList.add('active-zone');
+
+  panel.style.display = 'block';
+  content.innerHTML = '<p class="zone-loading">— WIRD GELADEN —</p>';
+
+  fetch(`/marktlage/zone/${zoneKey}/`)
+    .then(r => r.text())
+    .then(html => {
+      content.innerHTML = html;
+      content.querySelectorAll('script').forEach(oldScript => {
+        const newScript = document.createElement('script');
+        newScript.textContent = oldScript.textContent
+          .replace(/const CHARTS_DATA/g, 'var CHARTS_DATA')
+          .replace(/const NEWS_DATA/g, 'var NEWS_DATA')
+          .replace(/let activeCountry/g, 'var activeCountry')
+          .replace(/let activeTopic/g, 'var activeTopic')
+          .replace(/let activeMainTab/g, 'var activeMainTab')
+          .replace(/let todayChart/g, 'var todayChart')
+          .replace(/let days14Chart/g, 'var days14Chart');
+        document.body.appendChild(newScript);
+        oldScript.remove();
+      });
+    });
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  {% if "DACH" in active_zones %}showZone('DACH');{% endif %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Prognosen — HouseofStocks{% endblock %}
+{% block nav_stocks %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.sp-page { max-width: 1200px; margin: 0 auto; padding: 2.5rem; }
+
+/* HEADER */
+.sp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
+.sp-header h1 { font-family: 'Instrument Serif', serif; font-size: 2.2rem; font-weight: 400; letter-spacing: -0.02em; }
+.sp-header h1 em { color: var(--gold); font-style: italic; }
+.sp-header p { font-size: 0.85rem; color: var(--text3); letter-spacing: 0.04em; font-family: 'DM Mono', monospace; margin-top: 0.3rem; }
+.sp-live { display: flex; align-items: center; gap: 0.75rem; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 4px; padding: 0.75rem 1.25rem; }
+.sp-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4a9e6a; animation: pulse 2s infinite; }
+.sp-live-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text3); letter-spacing: 0.06em; }
+.sp-live-value { font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--text); font-weight: 500; }
+
+/* TIER NOTICE */
+.tier-notice { background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 4px; padding: 0.75rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+.tier-notice.free { border-color: #5e2a2a; }
+.tier-notice.pro { border-color: var(--gold-dim); }
+.tier-notice.premium { border-color: #2a5e3a; }
+.tier-badge { padding: 0.2rem 0.5rem; border-radius: 2px; font-size: 0.65rem; letter-spacing: 0.08em; }
+.tier-badge.free { background: rgba(201,85,85,0.12); color: #c95555; border: 0.5px solid #5e2a2a; }
+.tier-badge.pro { background: rgba(201,168,76,0.12); color: var(--gold); border: 0.5px solid var(--gold-dim); }
+.tier-badge.premium { background: rgba(74,158,106,0.12); color: #4a9e6a; border: 0.5px solid #2a5e3a; }
+
+/* FILTER BAR */
+.filter-bar { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; margin-bottom: 1.25rem; }
+.filter-group-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 0.6rem; }
+.filter-btns { display: flex; flex-direction: column; gap: 0.35rem; }
+.filter-btn { background: none; border: 0.5px solid var(--border2); color: var(--text3); padding: 0.4rem 0.75rem; border-radius: 3px; font-size: 0.72rem; font-family: 'DM Mono', monospace; cursor: pointer; text-align: left; transition: all 0.15s; letter-spacing: 0.02em; }
+.filter-btn:hover { border-color: var(--gold-dim); color: var(--text2); }
+.filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+.filter-btn.active-up { border-color: #2a5e3a; color: #4a9e6a; background: rgba(74,158,106,0.08); }
+.filter-btn.active-down { border-color: #5e2a2a; color: #c95555; background: rgba(201,85,85,0.08); }
+.filter-btn.active-match { border-color: #2a5e3a; color: #4a9e6a; background: rgba(74,158,106,0.08); }
+.filter-btn.active-dispute { border-color: #5e3a00; color: #c97a15; background: rgba(201,122,21,0.08); }
+
+/* SORT ROW */
+.sort-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-top: 1rem; border-top: 0.5px solid var(--border); }
+.sort-row select { background: var(--bg3); border: 0.5px solid var(--border2); color: var(--text2); padding: 0.4rem 0.75rem; border-radius: 3px; font-size: 0.72rem; font-family: 'DM Mono', monospace; cursor: pointer; }
+.sort-row select:focus { outline: none; border-color: var(--gold-dim); }
+.sort-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text3); letter-spacing: 0.06em; }
+.filter-count { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text3); }
+.reset-btn { background: none; border: 0.5px solid var(--border2); color: var(--text3); padding: 0.4rem 0.85rem; border-radius: 3px; font-size: 0.72rem; font-family: 'DM Mono', monospace; cursor: pointer; transition: all 0.2s; }
+.reset-btn:hover { border-color: var(--gold-dim); color: var(--text2); }
+
+/* SWEET SPOT BUTTON */
+.sweet-spot-btn { background: var(--gold); color: #0a0a08; border: none; padding: 0.4rem 1rem; border-radius: 3px; font-size: 0.72rem; font-family: 'DM Mono', monospace; font-weight: 500; cursor: pointer; letter-spacing: 0.04em; transition: all 0.2s; }
+.sweet-spot-btn:hover { background: var(--gold2); }
+.sweet-spot-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* STOCK GRID */
+.stocks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+
+/* STOCK CARD */
+.stock-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 6px; padding: 1.25rem; position: relative; cursor: default; transition: border-color 0.2s; }
+.stock-card:hover { border-color: var(--border2); }
+.stock-card.sweet { border-color: var(--gold) !important; }
+
+/* CARD HEADER */
+.sc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.85rem; }
+.sc-symbol { font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 500; color: var(--text); }
+.sc-badge { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; padding: 0.2rem 0.45rem; border-radius: 2px; background: rgba(74,126,181,0.1); color: #4a7eb5; border: 0.5px solid #2a3e5e; }
+
+/* PREDICTION DATE */
+.sc-date { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text3); text-align: center; background: var(--bg3); border-radius: 3px; padding: 0.3rem; margin-bottom: 0.85rem; letter-spacing: 0.04em; }
+
+/* PREDICTIONS */
+.sc-predictions { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.85rem; }
+.sc-pred-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg3); border-radius: 3px; padding: 0.5rem 0.75rem; }
+.sc-pred-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text3); letter-spacing: 0.04em; }
+.sc-pred-value { font-family: 'DM Mono', monospace; font-size: 0.82rem; font-weight: 500; }
+.sc-pred-value.up { color: #4a9e6a; }
+.sc-pred-value.down { color: #c95555; }
+.sc-pred-value.neutral { color: var(--text3); }
+
+/* DIVIDER */
+.sc-divider { border: none; border-top: 0.5px solid var(--border); margin: 0.75rem 0; }
+
+/* MATCH BADGE */
+.sc-match { text-align: center; }
+.sc-match-badge { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.08em; padding: 0.3rem 0.75rem; border-radius: 2px; display: inline-block; }
+.sc-match-badge.match { background: rgba(74,158,106,0.1); color: #4a9e6a; border: 0.5px solid #2a5e3a; }
+.sc-match-badge.dispute { background: rgba(201,122,21,0.1); color: #c97a15; border: 0.5px solid #5e3a00; }
+
+/* TOOLTIP */
+.sc-tooltip { display: none; position: absolute; top: -8px; right: -8px; background: var(--bg); border: 0.5px solid var(--border2); border-radius: 4px; padding: 0.75rem 1rem; min-width: 200px; z-index: 10; font-family: 'DM Mono', monospace; }
+.stock-card:hover .sc-tooltip { display: block; }
+.sc-tt-row { display: flex; justify-content: space-between; font-size: 0.68rem; padding: 0.2rem 0; }
+.sc-tt-label { color: var(--text3); }
+.sc-tt-value { color: var(--text); }
+.sc-tt-divider { border: none; border-top: 0.5px solid var(--border); margin: 0.4rem 0; }
+
+/* EMPTY STATE */
+.empty-state { grid-column: 1 / -1; text-align: center; padding: 4rem; background: var(--bg2); border: 0.5px dashed var(--border2); border-radius: 8px; }
+.empty-state-icon { font-family: 'DM Mono', monospace; font-size: 2rem; color: var(--text3); margin-bottom: 1rem; }
+.empty-state p { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text3); letter-spacing: 0.06em; }
+
+/* DISCLAIMER */
+.sp-disclaimer { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 4px; padding: 1.25rem; margin-top: 2rem; }
+.sp-disclaimer-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 0.5rem; }
+.sp-disclaimer p { font-size: 0.78rem; color: var(--text3); line-height: 1.7; }
+
+/* DISCLAIMER MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal-box { background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 8px; padding: 2.5rem; max-width: 520px; width: 100%; }
+.modal-title { font-family: 'Instrument Serif', serif; font-size: 1.8rem; font-weight: 400; margin-bottom: 0.5rem; }
+.modal-subtitle { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text3); letter-spacing: 0.06em; margin-bottom: 2rem; }
+.modal-items { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+.modal-item { display: flex; gap: 0.75rem; padding: 0.85rem 1rem; border-radius: 4px; border: 0.5px solid var(--border); }
+.modal-item-icon { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--gold-dim); flex-shrink: 0; margin-top: 1px; }
+.modal-item p { font-size: 0.8rem; color: var(--text2); line-height: 1.6; }
+.modal-item p strong { color: var(--text); }
+.modal-accept { width: 100%; background: var(--gold); color: #0a0a08; border: none; padding: 0.9rem; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.06em; cursor: pointer; transition: background 0.2s; }
+.modal-accept:hover { background: var(--gold2); }
+
+/* FREE TIER BLUR */
+.free-blur { filter: blur(4px); pointer-events: none; user-select: none; }
+.upgrade-overlay { position: relative; }
+.upgrade-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; z-index: 5; }
+.upgrade-btn { background: var(--gold); color: #0a0a08; border: none; padding: 0.6rem 1.5rem; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 0.72rem; font-weight: 500; cursor: pointer; letter-spacing: 0.04em; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sp-page">
+
+  {# HEADER #}
+  <div class="sp-header">
+    <div>
+      <h1>Stock <em>Prognosen</em></h1>
+      <p>LSTM + XGBOOST · 12 BANKAKTIEN · US-SEKTOR</p>
+    </div>
+    <div class="sp-live">
+      <div class="sp-live-dot"></div>
+      <div>
+        <div class="sp-live-label">LETZTES UPDATE</div>
+        <div class="sp-live-value">{{ last_update|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+
+  {# TIER NOTICE #}
+  {% if user.is_authenticated %}
+    {% if user.profile.tier == 'free' %}
+    <div class="tier-notice free">
+      <span class="tier-badge free">FREE</span>
+      <span style="color:var(--text3);">Du siehst gestrige Vorhersagen — <a href="{% url 'core:preise' %}" style="color:var(--gold-dim);">Upgrade auf Pro</a> für heutige Signale.</span>
+    </div>
+    {% elif user.profile.tier == 'pro' %}
+    <div class="tier-notice pro">
+      <span class="tier-badge pro">PRO</span>
+      <span style="color:var(--text3);">Heutige Vorhersagen aktiv.</span>
+    </div>
+    {% elif user.profile.tier == 'premium' %}
+    <div class="tier-notice premium">
+      <span class="tier-badge premium">PREMIUM</span>
+      <span style="color:var(--text3);">Holy Grail Signale aktiv — nur die stärksten Kaufsignale.</span>
+    </div>
+    {% endif %}
+  {% else %}
+  <div class="tier-notice free">
+    <span class="tier-badge free">NICHT EINGELOGGT</span>
+    <span style="color:var(--text3);"><a href="{% url 'account_login' %}" style="color:var(--gold-dim);">Anmelden</a> um Prognosen zu sehen.</span>
+  </div>
+  {% endif %}
+
+  {# FILTER BAR #}
+  <div class="filter-bar">
+    <div class="filter-grid">
+
+      <div>
+        <div class="filter-group-label">— ÜBEREINSTIMMUNG</div>
+        <div class="filter-btns">
+          <button class="filter-btn active" data-category="agreement" data-filter="all">ALLE ({{ stocks|length }})</button>
+          <button class="filter-btn" data-category="agreement" data-filter="match">MATCH</button>
+          <button class="filter-btn" data-category="agreement" data-filter="disp">DISPUTE</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="filter-group-label">— LSTM</div>
+        <div class="filter-btns">
+          <button class="filter-btn" data-category="lstm" data-filter="up">UP</button>
+          <button class="filter-btn" data-category="lstm" data-filter="down">DOWN</button>
+          <button class="filter-btn" data-category="lstm" data-filter="neutral">NEUTRAL</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="filter-group-label">— XGBOOST</div>
+        <div class="filter-btns">
+          <button class="filter-btn" data-category="xgb" data-filter="up">UP</button>
+          <button class="filter-btn" data-category="xgb" data-filter="down">DOWN</button>
+          <button class="filter-btn" data-category="xgb" data-filter="neutral">NEUTRAL</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="filter-group-label">— CONFIDENCE</div>
+        <div class="filter-btns">
+          <button class="filter-btn" data-category="confidence" data-filter="high">&gt;65%</button>
+          <button class="filter-btn" data-category="confidence" data-filter="medium">45–65%</button>
+          <button class="filter-btn" data-category="confidence" data-filter="low">&lt;45%</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sort-row">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span class="sort-label">SORT</span>
+        <select id="sort-select">
+          <option value="symbol">SYMBOL A–Z</option>
+          <option value="match-first">MATCH FIRST</option>
+          <option value="confidence-desc">CONFIDENCE ↓</option>
+          <option value="confidence-asc">CONFIDENCE ↑</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span class="filter-count" id="filter-count">{{ stocks|length }} AKTIEN</span>
+        <button class="reset-btn" id="reset-filters">RESET</button>
+        {% if is_premium %}
+        <button class="sweet-spot-btn" id="sweet-spot-btn" onclick="loadSweetSpot()">HOLY GRAIL</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# STOCK GRID #}
+  <div class="stocks-grid" id="stocks-grid">
+    {% for stock in stocks %}
+    <div class="stock-card"
+         data-symbol="{{ stock.Symbol }}"
+         data-lstm="{{ stock.LSTM_Prediction|lower }}"
+         data-xgb="{{ stock.XGB_Prediction|lower }}"
+         data-match="{% if stock.LSTM_Prediction == stock.XGB_Prediction %}true{% else %}false{% endif %}"
+         data-confidence="{{ stock.confidence|default:50 }}">
+
+      {# TOOLTIP #}
+      <div class="sc-tooltip">
+        <div class="sc-tt-row"><span class="sc-tt-label">DATUM</span><span class="sc-tt-value">{{ stock.prev_date|default:"—" }}</span></div>
+        <div class="sc-tt-row"><span class="sc-tt-label">CLOSE</span><span class="sc-tt-value">${{ stock.prev_close|floatformat:2|default:"—" }}</span></div>
+        <div class="sc-tt-row"><span class="sc-tt-label">VOLUME</span><span class="sc-tt-value">{{ stock.prev_volume|default:"—" }}</span></div>
+        <hr class="sc-tt-divider">
+        <div class="sc-tt-row"><span class="sc-tt-label">CONFIDENCE</span><span class="sc-tt-value" style="color:var(--gold);">{{ stock.confidence|default:50|floatformat:1 }}%</span></div>
+      </div>
+
+      {# CARD CONTENT #}
+      <div class="sc-head">
+        <span class="sc-symbol">{{ stock.Symbol }}</span>
+        <span class="sc-badge">BANK</span>
+      </div>
+
+      <div class="sc-date">{{ stock.prediction_date|default:"—" }}</div>
+
+      <div class="sc-predictions">
+        <div class="sc-pred-row">
+          <span class="sc-pred-label">LSTM</span>
+          <span class="sc-pred-value {% if stock.LSTM_Prediction == 'UP' %}up{% elif stock.LSTM_Prediction == 'DOWN' %}down{% else %}neutral{% endif %}">
+            {{ stock.LSTM_Prediction }}
+          </span>
+        </div>
+        <div class="sc-pred-row">
+          <span class="sc-pred-label">XGBOOST</span>
+          <span class="sc-pred-value {% if stock.XGB_Prediction == 'UP' %}up{% elif stock.XGB_Prediction == 'DOWN' %}down{% else %}neutral{% endif %}">
+            {{ stock.XGB_Prediction }}
+          </span>
+        </div>
+      </div>
+
+      <hr class="sc-divider">
+
+      <div class="sc-match">
+        {% if stock.LSTM_Prediction == stock.XGB_Prediction %}
+        <span class="sc-match-badge match">MATCH</span>
+        {% else %}
+        <span class="sc-match-badge dispute">DISPUTE</span>
+        {% endif %}
+      </div>
+
+    </div>
+    {% empty %}
+    <div class="empty-state">
+      <div class="empty-state-icon">◈</div>
+      <p>KEINE PREDICTION-DATEN VERFÜGBAR</p>
+      <p style="margin-top:0.5rem;font-size:0.65rem;">WARTE AUF DATEN AUS SUPABASE...</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# DISCLAIMER #}
+  <div class="sp-disclaimer">
+    <div class="sp-disclaimer-label">— RECHTLICHER HINWEIS</div>
+    <p>Alle Prognosen dienen ausschließlich Bildungs- und Informationszwecken. Sie stellen keine Anlageberatung im Sinne des WpHG dar. Vergangene Ergebnisse sind kein verlässlicher Indikator für zukünftige Entwicklungen.</p>
+  </div>
+
+</div>
+
+{# DISCLAIMER MODAL #}
+<div class="modal-overlay" id="disclaimer-modal">
+  <div class="modal-box">
+    <div class="modal-title">Rechtlicher Hinweis</div>
+    <div class="modal-subtitle">BITTE VOR DEM FORTFAHREN LESEN</div>
+    <div class="modal-items">
+      <div class="modal-item">
+        <span class="modal-item-icon">01</span>
+        <p><strong>Nur zu Bildungszwecken</strong> — Dieses Dashboard demonstriert ML-Engineering. Keine Finanzberatung.</p>
+      </div>
+      <div class="modal-item">
+        <span class="modal-item-icon">02</span>
+        <p><strong>Experimentelle KI-Modelle</strong> — LSTM und XGBoost Vorhersagen können ungenau sein.</p>
+      </div>
+      <div class="modal-item">
+        <span class="modal-item-icon">03</span>
+        <p><strong>Keine Anlageberatung</strong> — Nicht auf Basis dieser Daten handeln.</p>
+      </div>
+      <div class="modal-item">
+        <span class="modal-item-icon">04</span>
+        <p><strong>Vergangene Performance</strong> — Historische Ergebnisse garantieren keine zukünftigen Gewinne.</p>
+      </div>
+    </div>
+    <button class="modal-accept" onclick="acceptDisclaimer()">VERSTANDEN — DASHBOARD ANZEIGEN</button>
+  </div>
+</div>
+
+<script>
+// Disclaimer
+function acceptDisclaimer() {
+  sessionStorage.setItem('disclaimer_accepted', 'true');
+  document.getElementById('disclaimer-modal').style.display = 'none';
+}
+if (sessionStorage.getItem('disclaimer_accepted') === 'true') {
+  document.getElementById('disclaimer-modal').style.display = 'none';
+}
+
+// Filter & Sort
+document.addEventListener('DOMContentLoaded', function() {
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const sortSelect = document.getElementById('sort-select');
+  const resetBtn   = document.getElementById('reset-filters');
+  const filterCount = document.getElementById('filter-count');
+
+  let currentFilters = { agreement: 'all', lstm: 'all', xgb: 'all', confidence: 'all' };
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const category = this.dataset.category;
+      const filter   = this.dataset.filter;
+      document.querySelectorAll(`[data-category="${category}"]`).forEach(b => b.classList.remove('active','active-up','active-down','active-match','active-dispute'));
+      this.classList.add('active');
+      currentFilters[category] = filter;
+      applyFilters();
+    });
+  });
+
+  sortSelect.addEventListener('change', function() { sortStocks(this.value); });
+
+  resetBtn.addEventListener('click', function() {
+    currentFilters = { agreement: 'all', lstm: 'all', xgb: 'all', confidence: 'all' };
+    filterBtns.forEach(btn => btn.classList.remove('active','active-up','active-down','active-match','active-dispute'));
+    document.querySelector('[data-filter="all"]').classList.add('active');
+    applyFilters();
+    sortSelect.value = 'symbol';
+    sortStocks('symbol');
+  });
+
+  function applyFilters() {
+    const cards = document.querySelectorAll('.stock-card');
+    let visible = 0;
+    cards.forEach(card => {
+      let show = true;
+      if (currentFilters.agreement !== 'all') {
+        if (currentFilters.agreement === 'match' && card.dataset.match !== 'true') show = false;
+        if (currentFilters.agreement === 'disp'  && card.dataset.match !== 'false') show = false;
+      }
+      if (currentFilters.lstm !== 'all' && card.dataset.lstm !== currentFilters.lstm) show = false;
+      if (currentFilters.xgb  !== 'all' && card.dataset.xgb  !== currentFilters.xgb)  show = false;
+      if (currentFilters.confidence !== 'all') {
+        const conf = parseFloat(card.dataset.confidence);
+        if (currentFilters.confidence === 'high'   && conf <= 65) show = false;
+        if (currentFilters.confidence === 'medium' && (conf < 45 || conf > 65)) show = false;
+        if (currentFilters.confidence === 'low'    && conf >= 45) show = false;
+      }
+      card.style.display = show ? 'block' : 'none';
+      if (show) visible++;
+    });
+    filterCount.textContent = visible + ' AKTIEN';
+  }
+
+  function sortStocks(type) {
+    const grid  = document.getElementById('stocks-grid');
+    const cards = Array.from(grid.querySelectorAll('.stock-card'));
+    cards.sort((a, b) => {
+      if (type === 'symbol')           return a.dataset.symbol.localeCompare(b.dataset.symbol);
+      if (type === 'match-first')      return b.dataset.match.localeCompare(a.dataset.match);
+      if (type === 'confidence-desc')  return parseFloat(b.dataset.confidence) - parseFloat(a.dataset.confidence);
+      if (type === 'confidence-asc')   return parseFloat(a.dataset.confidence) - parseFloat(b.dataset.confidence);
+      return 0;
+    });
+    cards.forEach(card => grid.appendChild(card));
+  }
+});
+
+{% if is_premium %}
+function loadSweetSpot() {
+  const btn = document.getElementById('sweet-spot-btn');
+  btn.textContent = 'LADEN...';
+  btn.disabled = true;
+
+  fetch("{% url 'stockpredict:sweet_spot_api' %}")
+    .then(r => r.json())
+    .then(data => {
+      btn.textContent = 'HOLY GRAIL';
+      btn.disabled = false;
+
+      if (!data.success || data.stocks.length === 0) {
+        alert('Keine Holy Grail Signale heute.');
+        return;
+      }
+
+      const grid    = document.getElementById('stocks-grid');
+      const cards   = grid.querySelectorAll('.stock-card');
+      const symbols = data.stocks.map(s => s.symbol);
+
+      cards.forEach(card => {
+        if (symbols.includes(card.dataset.symbol)) {
+          card.style.display = 'block';
+          card.classList.add('sweet');
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      document.getElementById('filter-count').textContent = 'HOLY GRAIL: ' + symbols.length + ' SIGNALE';
+    })
+    .catch(err => {
+      btn.textContent = 'HOLY GRAIL';
+      btn.disabled = false;
+    });
+}
+{% endif %}
+</script>
+{% endblock %}

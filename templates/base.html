@@ -20,9 +20,9 @@
     </a>
     <div class="nav-links">
 
-      <a href="#" class="nav-link {% block nav_stocks %}{% endblock %}">Prognosen</a>
-      <a href="#" class="nav-link {% block nav_preise %}{% endblock %}">Preise</a>
-      <a href="#" class="nav-link {% block nav_mood %}{% endblock %}">Marktlage</a>
+      <a href="{% url 'stockpredict:index' %}" class="nav-link {% block nav_stocks %}{% endblock %}">Prognosen</a>
+      <a href="{% url 'core:preise' %}" class="nav-link {% block nav_preise %}{% endblock %}">Preise</a>
+      <a href="{% url 'marketmood:index' %}" class="nav-link">Marktlage</a>
       <button class="toggle-theme" onclick="toggleTheme()" title="Hell/Dunkel">◑</button>
       {% if user.is_authenticated %}
         <span class="nav-user">{{ user.email }}</span>
@@ -72,7 +72,7 @@
       <a href="#" class="footer-link">Datenschutz</a>
       <a href="mailto:kontakt@houseofstocks.dev" class="footer-link">Kontakt</a>
     </div>
-    <span class="footer-copy">© 2026 — München</span>
+    <span class="footer-copy">© 2026 — Rosenheim / München</span>
   </div>
 </footer>
 

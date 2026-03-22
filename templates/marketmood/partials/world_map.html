@@ -1,0 +1,129 @@
+<div id="world-map-container" style="width:100%;position:relative;">
+  <div id="map-svg-wrapper" style="width:100%;min-height:300px;"></div>
+  <div id="map-tooltip">
+    <div id="tooltip-zone"></div>
+    <div id="tooltip-score"></div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap/dist/css/jsvectormap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/js/jsvectormap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/maps/world.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ZONE_DATA = {{ zones_json|safe }};
+
+  const COUNTRY_TO_ZONE = {
+    "DE":"DACH","AT":"DACH","CH":"DACH","LI":"DACH",
+    "FR":"Western Europe","GB":"Western Europe","NL":"Western Europe","BE":"Western Europe","IE":"Western Europe","LU":"Western Europe",
+    "SE":"Northern Europe","NO":"Northern Europe","DK":"Northern Europe","FI":"Northern Europe","IS":"Northern Europe",
+    "IT":"Southern Europe","ES":"Southern Europe","PT":"Southern Europe","GR":"Southern Europe","HR":"Southern Europe","CY":"Southern Europe","MT":"Southern Europe","MC":"Southern Europe","SM":"Southern Europe","AD":"Southern Europe",
+    "PL":"Eastern Europe","CZ":"Eastern Europe","HU":"Eastern Europe","RO":"Eastern Europe","SK":"Eastern Europe","BG":"Eastern Europe",
+    "RS":"Balkans","BA":"Balkans","MK":"Balkans","AL":"Balkans","ME":"Balkans","SI":"Balkans","XK":"Balkans",
+    "EE":"Baltic States","LV":"Baltic States","LT":"Baltic States",
+    "US":"USA","CA":"Canada",
+    "MX":"Central America","GT":"Central America","HN":"Central America","CR":"Central America","PA":"Central America","NI":"Central America","SV":"Central America","BZ":"Central America",
+    "CU":"Caribbean","DO":"Caribbean","JM":"Caribbean","TT":"Caribbean","HT":"Caribbean",
+    "CO":"Andean States","VE":"Andean States","PE":"Andean States","EC":"Andean States","GY":"Andean States","SR":"Andean States",
+    "BR":"Brazil",
+    "AR":"Southern Cone","CL":"Southern Cone","UY":"Southern Cone","BO":"Southern Cone","PY":"Southern Cone",
+    "CN":"China","JP":"Japan","IN":"India",
+    "SG":"Southeast Asia","TH":"Southeast Asia","VN":"Southeast Asia","MY":"Southeast Asia","ID":"Southeast Asia","PH":"Southeast Asia","BD":"Southeast Asia","MM":"Southeast Asia","KH":"Southeast Asia","LA":"Southeast Asia",
+    "KR":"Korea & Taiwan","TW":"Korea & Taiwan",
+    "KZ":"Central Asia","UZ":"Central Asia","TM":"Central Asia","KG":"Central Asia","TJ":"Central Asia","AF":"Central Asia","PK":"Central Asia","MN":"Central Asia","NP":"Central Asia","LK":"Central Asia",
+    "AU":"Oceania","NZ":"Oceania","PG":"Oceania","FJ":"Oceania","SB":"Oceania","VU":"Oceania","WS":"Oceania","TO":"Oceania",
+    "EG":"North Africa","MA":"North Africa","TN":"North Africa","DZ":"North Africa","LY":"North Africa","SD":"North Africa","MR":"North Africa",
+    "NG":"West Africa","GH":"West Africa","SN":"West Africa","CI":"West Africa","ML":"West Africa","CM":"West Africa","CD":"West Africa","CG":"West Africa","GA":"West Africa","GQ":"West Africa","LR":"West Africa","SL":"West Africa","GN":"West Africa","BJ":"West Africa","TG":"West Africa","BF":"West Africa","NE":"West Africa",
+    "ET":"East Africa","KE":"East Africa","TZ":"East Africa","UG":"East Africa","RW":"East Africa","SO":"East Africa","SS":"East Africa","TD":"East Africa","BI":"East Africa","DJ":"East Africa","ER":"East Africa",
+    "ZA":"Southern Africa","ZW":"Southern Africa","MZ":"Southern Africa","ZM":"Southern Africa","BW":"Southern Africa","AO":"Southern Africa","NA":"Southern Africa","LS":"Southern Africa","SZ":"Southern Africa","MG":"Southern Africa",
+    "SA":"Middle East","AE":"Middle East","IL":"Middle East","JO":"Middle East","LB":"Middle East","TR":"Middle East","IR":"Middle East","IQ":"Middle East","SY":"Middle East","PS":"Middle East",
+    "QA":"Gulf States","KW":"Gulf States","BH":"Gulf States","OM":"Gulf States","YE":"Gulf States",
+    "RU":"Russia & CIS","UA":"Russia & CIS","BY":"Russia & CIS","MD":"Russia & CIS","GE":"Russia & CIS","AZ":"Russia & CIS","AM":"Russia & CIS",
+  };
+
+  function getCountryColor(code) {
+    const zk = COUNTRY_TO_ZONE[code];
+    if (!zk) return "#2a2a26";
+    const zone = ZONE_DATA[zk];
+    if (!zone || !zone.active) return "#2a2a26";
+    const country = zone.countries.find(c => c.code === code);
+    if (!country || country.label === "no_data") return "#2a2a26";
+    if (country.label === "bullish") return "#2a5e3a";
+    if (country.label === "bearish") return "#5e2a2a";
+    return "#2a3e5e";
+  }
+
+  try {
+    const map = new jsVectorMap({
+      selector: "#map-svg-wrapper",
+      map: "world",
+      zoomButtons: true,
+      zoomOnScroll: true,
+      zoomMax: 12,
+      zoomMin: 1,
+      panOnDrag: true,
+      regionStyle: {
+        initial: { fill: "#1a1a17", stroke: "#0a0a08", strokeWidth: 0.5 },
+        hover:   { fill: "#c9a84c", fillOpacity: 0.6 },
+      },
+      onRegionTooltipShow(event, tooltip, code) {
+        event.preventDefault();
+        const zk   = COUNTRY_TO_ZONE[code.toUpperCase()];
+        const zone = zk ? ZONE_DATA[zk] : null;
+        const tip  = document.getElementById("map-tooltip");
+        const zEl  = document.getElementById("tooltip-zone");
+        const sEl  = document.getElementById("tooltip-score");
+        if (zone && zone.active) {
+          zEl.textContent = zone.label;
+          const sign = zone.score >= 0 ? "+" : "";
+          sEl.textContent = `${sign}${zone.score.toFixed(2)} · ${zone.mood}`;
+        } else if (zk) {
+          zEl.textContent = zk;
+          sEl.textContent = "keine Daten";
+        } else {
+          zEl.textContent = code;
+          sEl.textContent = "nicht erfasst";
+        }
+        tip.style.display = "block";
+      },
+      onRegionOut(event, code) {
+        document.getElementById("map-tooltip").style.display = "none";
+        const el = document.querySelector(`.jvm-region[data-code="${code}"]`);
+        if (el) { const c = el.getAttribute("data-mood-color"); if (c) el.style.fill = c; }
+      },
+      onRegionClick(event, code) {
+        const zk = COUNTRY_TO_ZONE[code.toUpperCase()];
+        if (zk && ZONE_DATA[zk]?.active) showZone(zk);
+      },
+    });
+
+    setTimeout(() => {
+      Object.keys(COUNTRY_TO_ZONE).forEach(code => {
+        const color = getCountryColor(code);
+        const el = document.querySelector(`.jvm-region[data-code="${code}"]`);
+        if (el) { el.style.fill = color; el.setAttribute("data-mood-color", color); }
+      });
+    }, 500);
+
+  } catch(e) {
+    console.warn("Map error:", e);
+    document.getElementById("map-svg-wrapper").innerHTML =
+      '<p style="color:var(--text3);text-align:center;padding:2rem;font-family:DM Mono,monospace;font-size:0.75rem;">KARTE WIRD GELADEN...</p>';
+  }
+
+  document.getElementById("map-svg-wrapper").addEventListener("mouseleave", () => {
+    document.getElementById("map-tooltip").style.display = "none";
+  });
+  document.getElementById("map-svg-wrapper").addEventListener("mousemove", e => {
+      const tip    = document.getElementById("map-tooltip");
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      if (!target || !target.classList.contains('jvm-region')) {
+          tip.style.display = "none";
+      } else {
+          tip.style.left = (e.offsetX + 12) + "px";
+          tip.style.top  = (e.offsetY - 10) + "px";
+      }
+  });
+}); 
+</script>

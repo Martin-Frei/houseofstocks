@@ -1,0 +1,244 @@
+<style>
+.zp { font-family: 'Geist', sans-serif; }
+.zp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); }
+.zp-title { font-family: 'Instrument Serif', serif; font-size: 1.6rem; font-weight: 400; color: var(--text); }
+.zp-subtitle { font-size: 0.75rem; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 0.25rem; }
+.zp-score { font-family: 'DM Mono', monospace; font-size: 1.8rem; font-weight: 500; text-align: right; }
+.zp-score.bull { color: #4a9e6a; }
+.zp-score.bear { color: #c95555; }
+.zp-score.neu  { color: #4a7eb5; }
+.zp-mood-badge { font-size: 0.65rem; letter-spacing: 0.08em; padding: 0.2rem 0.5rem; border-radius: 2px; font-family: 'DM Mono', monospace; margin-top: 0.35rem; display: inline-block; }
+.zp-mood-badge.bull { background: rgba(74,158,106,0.12); color: #4a9e6a; border: 0.5px solid #2a5e3a; }
+.zp-mood-badge.bear { background: rgba(201,85,85,0.12); color: #c95555; border: 0.5px solid #5e2a2a; }
+.zp-mood-badge.neu  { background: rgba(74,126,181,0.12); color: #4a7eb5; border: 0.5px solid #2a3e5e; }
+
+/* Country Cards */
+.country-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 1.5rem; }
+.country-card { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 4px; padding: 0.85rem; cursor: pointer; transition: all 0.2s; }
+.country-card:hover { border-color: var(--gold-dim); }
+.country-card.active { border-color: var(--gold); }
+.country-card.no-data { opacity: 0.35; cursor: not-allowed; }
+.country-card.bull { border-color: #2a5e3a; }
+.country-card.bear { border-color: #5e2a2a; }
+.country-card.neu  { border-color: #2a3e5e; }
+.cc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+.cc-code { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--text); font-weight: 500; }
+.cc-score { font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 500; }
+.cc-score.bull { color: #4a9e6a; }
+.cc-score.bear { color: #c95555; }
+.cc-score.neu  { color: #4a7eb5; }
+.cc-topics { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.cc-topic { font-size: 0.65rem; color: var(--text3); font-family: 'DM Mono', monospace; }
+.cc-topic span { font-weight: 500; }
+.cc-topic span.bull { color: #4a9e6a; }
+.cc-topic span.bear { color: #c95555; }
+
+/* Detail Panel */
+#country-detail { margin-top: 1.5rem; }
+.main-tabs { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 1.25rem; }
+.main-tab { background: none; border: none; padding: 0.6rem 1.25rem; font-size: 0.8rem; color: var(--text3); cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; border-bottom: 2px solid transparent; transition: all 0.2s; margin-bottom: -1px; }
+.main-tab:hover { color: var(--text2); }
+.main-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.news-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.news-tab { background: var(--bg3); border: 0.5px solid var(--border2); color: var(--text3); padding: 0.25rem 0.65rem; border-radius: 2px; font-size: 0.68rem; font-family: 'DM Mono', monospace; cursor: pointer; letter-spacing: 0.04em; transition: all 0.2s; }
+.news-tab:hover { border-color: var(--gold-dim); color: var(--text2); }
+.news-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+.news-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.news-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem; border-radius: 3px; text-decoration: none; transition: background 0.15s; }
+.news-item:hover { background: var(--bg3); }
+.news-sentiment { font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.2rem 0.45rem; border-radius: 2px; white-space: nowrap; margin-top: 1px; flex-shrink: 0; }
+.news-sentiment.bull { background: rgba(74,158,106,0.12); color: #4a9e6a; }
+.news-sentiment.bear { background: rgba(201,85,85,0.12); color: #c95555; }
+.news-title { font-size: 0.845rem; color: var(--text); line-height: 1.5; }
+.news-meta { font-size: 0.72rem; color: var(--text3); margin-top: 0.2rem; font-family: 'DM Mono', monospace; }
+.chart-wrap { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 4px; padding: 1.25rem; }
+.chart-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text3); letter-spacing: 0.06em; margin-bottom: 1rem; }
+.placeholder-msg { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text3); text-align: center; padding: 2rem; }
+</style>
+
+<div class="zp">
+
+  {# HEADER #}
+  <div class="zp-header">
+    <div>
+      <div class="zp-title">{{ zone.label }}</div>
+      <div class="zp-subtitle">{{ zone.countries|length }} LÄNDER · SENTIMENT ANALYSE</div>
+    </div>
+    <div style="text-align:right">
+      <div class="zp-score {% if zone.mood == 'bullish' %}bull{% elif zone.mood == 'bearish' %}bear{% else %}neu{% endif %}">
+        {% if zone.score %}{% if zone.score >= 0 %}+{% endif %}{{ zone.score|floatformat:2 }}{% else %}—{% endif %}
+      </div>
+      <div class="zp-mood-badge {% if zone.mood == 'bullish' %}bull{% elif zone.mood == 'bearish' %}bear{% else %}neu{% endif %}">
+        {{ zone.mood|upper }}
+      </div>
+    </div>
+  </div>
+
+  {# COUNTRY CARDS #}
+  <div class="country-grid">
+    {% for country in zone.countries %}
+    <div onclick="selectCountry('{{ country.code }}')"
+         id="card-{{ country.code }}"
+         class="country-card {% if country.label == 'no_data' %}no-data{% elif country.label == 'bullish' %}bull{% elif country.label == 'bearish' %}bear{% else %}neu{% endif %}">
+      <div class="cc-top">
+        <span class="cc-code">{{ country.code }}</span>
+        {% if country.label != 'no_data' %}
+        <span class="cc-score {% if country.label == 'bullish' %}bull{% elif country.label == 'bearish' %}bear{% else %}neu{% endif %}">
+          {% if country.score >= 0 %}+{% endif %}{{ country.score|floatformat:2 }}
+        </span>
+        {% else %}
+        <span style="font-size:0.7rem;color:var(--text3);">—</span>
+        {% endif %}
+      </div>
+      {% if country.label != 'no_data' %}
+      <div class="cc-topics">
+        {% if country.score_finance %}<div class="cc-topic">FIN <span class="{% if country.score_finance >= 0 %}bull{% else %}bear{% endif %}">{{ country.score_finance|floatformat:2 }}</span></div>{% endif %}
+        {% if country.score_geopolitics %}<div class="cc-topic">GEO <span class="{% if country.score_geopolitics >= 0 %}bull{% else %}bear{% endif %}">{{ country.score_geopolitics|floatformat:2 }}</span></div>{% endif %}
+        {% if country.score_energy %}<div class="cc-topic">ENE <span class="{% if country.score_energy >= 0 %}bull{% else %}bear{% endif %}">{{ country.score_energy|floatformat:2 }}</span></div>{% endif %}
+        {% if country.score_politics %}<div class="cc-topic">POL <span class="{% if country.score_politics >= 0 %}bull{% else %}bear{% endif %}">{{ country.score_politics|floatformat:2 }}</span></div>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {# COUNTRY DETAIL #}
+  <div id="country-detail" style="display:none;">
+
+    <div class="main-tabs">
+      <button class="main-tab active" onclick="switchMainTab('news')" id="tab-news">NEWS</button>
+      <button class="main-tab" onclick="switchMainTab('today')" id="tab-today">HEUTE</button>
+      <button class="main-tab" onclick="switchMainTab('14days')" id="tab-14days">14 TAGE</button>
+    </div>
+
+    <div id="panel-news">
+      <div class="news-tabs">
+        {% for topic in news_topics %}
+        <button class="news-tab {% if topic == 'finance' %}active{% endif %}"
+                onclick="switchNewsTopic('{{ topic }}')"
+                id="news-tab-{{ topic }}">{{ topic|upper }}</button>
+        {% endfor %}
+      </div>
+      <div id="news-articles" class="news-list"></div>
+    </div>
+
+    <div id="panel-today" style="display:none;">
+      <div class="chart-wrap">
+        <div class="chart-label">— HEUTE (STÜNDLICH)</div>
+        <canvas id="chart-today-active" height="120"></canvas>
+        <p id="placeholder-today-active" class="placeholder-msg" style="display:none;">SAMMLE DATEN... SPÄTER WIEDERKOMMEN ⏳</p>
+      </div>
+    </div>
+
+    <div id="panel-14days" style="display:none;">
+      <div class="chart-wrap">
+        <div class="chart-label">— LETZTE 14 TAGE</div>
+        <canvas id="chart-14d-active" height="120"></canvas>
+        <p id="placeholder-14d-active" class="placeholder-msg" style="display:none;">NOCH NICHT GENUG DATEN — MORGEN WIEDERKOMMEN 📅</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+var CHARTS_DATA = {{ charts|safe }};
+var NEWS_DATA   = {{ news|safe }};
+var activeCountry = null;
+var activeTopic   = 'finance';
+var activeMainTab = 'news';
+var todayChart    = null;
+var days14Chart   = null;
+
+function selectCountry(code) {
+  if (!CHARTS_DATA[code] && !NEWS_DATA[code]) return;
+  activeCountry = code;
+  document.querySelectorAll('[id^="card-"]').forEach(el => el.classList.remove('active'));
+  const card = document.getElementById('card-' + code);
+  if (card) card.classList.add('active');
+  document.getElementById('country-detail').style.display = 'block';
+  switchMainTab(activeMainTab);
+}
+
+function switchMainTab(tab) {
+  activeMainTab = tab;
+  ['news','today','14days'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    const panel = document.getElementById('panel-' + t);
+    if (panel) panel.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'news')   renderNews(activeTopic);
+  if (tab === 'today')  renderTodayChart();
+  if (tab === '14days') render14dChart();
+}
+
+function switchNewsTopic(topic) {
+  activeTopic = topic;
+  document.querySelectorAll('.news-tab').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('news-tab-' + topic);
+  if (btn) btn.classList.add('active');
+  renderNews(topic);
+}
+
+function renderNews(topic) {
+  const container = document.getElementById('news-articles');
+  if (!activeCountry || !NEWS_DATA[activeCountry]) {
+    container.innerHTML = '<p class="placeholder-msg">Keine Daten verfügbar</p>';
+    return;
+  }
+  const articles = NEWS_DATA[activeCountry][topic] || [];
+  if (articles.length === 0) {
+    container.innerHTML = '<p class="placeholder-msg">Keine ' + topic + ' Artikel gefunden ⏳</p>';
+    return;
+  }
+  container.innerHTML = articles.map(a => {
+    const score = parseFloat(a.vader_compound);
+    const isPos = score >= 0;
+    const sign  = isPos ? '+' : '';
+    const cls   = isPos ? 'bull' : 'bear';
+    const date  = new Date(a.published || a.created_at).toLocaleDateString('de', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    return `<a href="${a.url}" target="_blank" class="news-item">
+      <span class="news-sentiment ${cls}">${sign}${score.toFixed(2)}</span>
+      <div>
+        <div class="news-title">${a.title}</div>
+        <div class="news-meta">${a.source} · ${date}</div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+function renderTodayChart() {
+  const el = document.getElementById('chart-today-active');
+  const ph = document.getElementById('placeholder-today-active');
+  if (todayChart) { todayChart.destroy(); todayChart = null; }
+  const data = CHARTS_DATA[activeCountry];
+  if (!data || !data.today || data.today.length < 2) {
+    el.style.display = 'none'; ph.style.display = 'block'; return;
+  }
+  el.style.display = 'block'; ph.style.display = 'none';
+  const labels = data.today.map(s => { const d = new Date(s.created_at); return d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0'); });
+  const scores = data.today.map(s => s.final_score);
+  const color  = scores[scores.length-1] >= 0 ? '#4a9e6a' : '#c95555';
+  todayChart = new Chart(el, { type:'line', data:{ labels, datasets:[{ data:scores, borderColor:color, backgroundColor:'transparent', tension:0.3, pointRadius:3 }]}, options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ y:{min:-1,max:1,ticks:{color:'#5a5955',font:{size:10}}}, x:{ticks:{color:'#5a5955',font:{size:10}}}}}});
+}
+
+function render14dChart() {
+  const el = document.getElementById('chart-14d-active');
+  const ph = document.getElementById('placeholder-14d-active');
+  if (days14Chart) { days14Chart.destroy(); days14Chart = null; }
+  const data = CHARTS_DATA[activeCountry];
+  if (!data || !data.days14 || data.days14.length < 3) {
+    el.style.display = 'none'; ph.style.display = 'block'; return;
+  }
+  el.style.display = 'block'; ph.style.display = 'none';
+  const labels = data.days14.map(s => { const d = new Date(s.created_at); return (d.getMonth()+1) + '.' + d.getDate(); });
+  const scores = data.days14.map(s => s.final_score);
+  days14Chart = new Chart(el, { type:'line', data:{ labels, datasets:[{ data:scores, borderColor:'#c9a84c', backgroundColor:'transparent', tension:0.3, pointRadius:3 }]}, options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ y:{min:-1,max:1,ticks:{color:'#5a5955',font:{size:10}}}, x:{ticks:{color:'#5a5955',font:{size:10}}}}}});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const first = Object.keys(NEWS_DATA)[0];
+  if (first) selectCountry(first);
+});
+</script>

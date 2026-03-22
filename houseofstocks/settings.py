@@ -137,3 +137,6 @@ STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+SPV2_SUPABASE_URL = os.getenv('SPV2_SUPABASE_URL')
+SPV2_SUPABASE_ANON_KEY = os.getenv('SPV2_SUPABASE_ANON_KEY')

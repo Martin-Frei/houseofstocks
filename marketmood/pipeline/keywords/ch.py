@@ -1,0 +1,60 @@
+
+# mood/pipeline/keywords/ch.py
+CH_KEYWORDS = {
+    "finance": [
+        "swiss franc", "chf", "snb", "swiss national bank",
+        "swiss economy", "zurich stock exchange", "six exchange",
+        "smi", "safe haven", "swiss banking", "banking secrecy",
+        "nestle", "novartis", "roche", "ubs", "swiss re",
+        "zurich insurance", "julius baer", "pictet",
+        "swiss gdp", "swiss inflation", "swiss exports",
+        "swiss trade", "swiss budget", "swiss market",
+        "swiss business", "swiss tourism", "swiss industry",
+        "swiss investment", "swiss unemployment", "swiss wages",
+        "swiss growth", "swiss firms", "swiss companies",
+    ],
+    "geopolitics": [
+        "swiss neutrality", "geneva convention", "swiss mediator",
+        "icrc", "red cross", "osce", "swiss diplomacy",
+        "swiss foreign policy", "swiss sanctions", "swiss eu",
+        "swiss bilateral", "swiss embassy", "switzerland nato",
+        "swiss image", "swiss reputation", "swiss ambassador",
+        "geneva talks", "swiss conflict", "swiss peacekeeping",
+        "swiss humanitarian", "swiss neutral",
+    ],
+    "energy": [
+        "swiss energy", "swiss electricity", "swiss nuclear",
+        "swiss renewables", "swiss grid", "swiss hydro",
+        "swiss solar", "swiss wind", "swiss climate",
+        "swiss emissions", "swiss carbon", "swiss green",
+        "swiss sustainability", "swiss power",
+    ],
+    "technology": [
+        "swiss startup", "swiss tech", "swiss digitalization",
+        "swiss ai", "swiss fintech", "swiss blockchain",
+        "eth zurich", "epfl", "swiss innovation",
+        "swiss robotics", "swiss medtech",
+    ],
+    "health": [
+        "swiss health", "swiss hospital", "swiss pharma",
+        "swiss medicine", "swiss healthcare",
+        "swiss health insurance", "swiss clinical trial",
+        "swiss biotech", "swiss medical",
+    ],
+    "crime": [
+        "swiss corruption", "swiss fraud", "swiss scandal",
+        "swiss court", "swiss investigation", "swiss money laundering",
+        "swiss banking scandal", "swiss organized crime",
+    ],
+    "politics": [
+        "swiss parliament", "bundesrat", "nationalrat",
+        "staenderat", "swiss government", "swiss federal council",
+        "swiss election", "swiss referendum", "direct democracy",
+        "swiss initiative", "swiss vote", "swiss party",
+        "svp", "sp switzerland", "fdp switzerland", "mitte",
+        "swiss minister", "swiss president", "swiss senate",
+        "swiss canton", "swiss policy", "swiss reform",
+        "swiss coalition", "swiss law", "swiss court ruling",
+        "swiss constitution", "swiss federal",
+    ],
+}
