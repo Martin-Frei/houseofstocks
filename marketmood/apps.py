@@ -1,15 +1,17 @@
 from django.apps import AppConfig
 import os
+import sys
 
 class MarketmoodConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'marketmood'
 
     def ready(self):
-        # Scheduler nur starten wenn Railway Umgebung
-        # UND nicht während migrate/check läuft
-        if os.environ.get('RAILWAY_ENVIRONMENT'):
-            import sys
-            if 'migrate' not in sys.argv and 'check' not in sys.argv:
-                from .scheduler import start
-                start()
+        # Nicht starten bei Management Commands
+        if 'migrate' in sys.argv or 'check' in sys.argv or 'collectstatic' in sys.argv:
+            return
+        # Lokal: nur im Hauptprozess (nicht StatReloader)
+        # Railway: immer starten
+        if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RUN_MAIN'):
+            from .scheduler import start
+            start()
