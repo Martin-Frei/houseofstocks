@@ -56,7 +56,6 @@ def get_stock_prices() -> list:
     Gibt Liste von {symbol, price, direction} zurück.
     """
     try:
-        # Neuestes Datum
         r1 = httpx.get(
             f"{settings.SPV2_SUPABASE_URL}/rest/v1/predictions",
             headers={
@@ -66,7 +65,12 @@ def get_stock_prices() -> list:
             params={"select": "date_for", "order": "date_for.desc", "limit": "1"},
             timeout=5.0
         )
-        if not r1.json():
+        print(f"[TICKER] SPV2 Status: {r1.status_code}")
+        print(f"[TICKER] SPV2 Response: {r1.text[:200]}")
+        
+        rows = r1.json()
+        if not rows:
+            print("[TICKER] SPV2: keine Daten")
             return []
 
         latest_date = r1.json()[0]['date_for']
