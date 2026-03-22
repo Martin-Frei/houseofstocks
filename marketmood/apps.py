@@ -8,10 +8,8 @@ class MarketmoodConfig(AppConfig):
 
     def ready(self):
         # Nicht starten bei Management Commands
-        if 'migrate' in sys.argv or 'check' in sys.argv or 'collectstatic' in sys.argv:
+        if any(cmd in sys.argv for cmd in ['migrate', 'check', 'collectstatic', 'makemigrations']):
             return
-        # Lokal: nur im Hauptprozess (nicht StatReloader)
-        # Railway: immer starten
-        if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RUN_MAIN'):
-            from .scheduler import start
-            start()
+        # Immer starten – lokal und auf Railway
+        from .scheduler import start
+        start()
