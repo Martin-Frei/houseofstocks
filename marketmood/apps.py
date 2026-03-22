@@ -7,9 +7,13 @@ class MarketmoodConfig(AppConfig):
     name = 'marketmood'
 
     def ready(self):
-        # Nicht starten bei Management Commands
         if any(cmd in sys.argv for cmd in ['migrate', 'check', 'collectstatic', 'makemigrations']):
             return
-        # Immer starten – lokal und auf Railway
-        from .scheduler import start
-        start()
+        try:
+            from .scheduler import start
+            start()
+            print("[APPS] Scheduler started successfully!")
+        except Exception as e:
+            print(f"[APPS] Scheduler failed to start: {e}")
+            import traceback
+            traceback.print_exc()
