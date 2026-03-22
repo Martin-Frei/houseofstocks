@@ -21,8 +21,7 @@ def get_client() -> Client:
     """Initialize and return Supabase client"""
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-    print(f"[SUPABASE] URL: {url[:30] if url else 'MISSING'}")
-    print(f"[SUPABASE] KEY: {key[:20] if key else 'MISSING'}")
+    
 
     if not url or not key:
         raise ValueError("[SUPABASE] Missing SUPABASE_URL or SUPABASE_KEY in .env")
@@ -40,7 +39,7 @@ def save_articles(articles: list) -> dict:
     V1 fields filled — V2/V3 fields set to empty/None
     """
     if not articles:
-        print("[SUPABASE] No articles to save")
+        
         return {"saved": 0, "errors": 0}
 
     client = get_client()
@@ -79,10 +78,10 @@ def save_articles(articles: list) -> dict:
             saved += 1
 
         except Exception as e:
-            print(f"[SUPABASE] Error saving '{article.get('title', '?')}': {e}")
+            
             errors += 1
 
-    print(f"[SUPABASE] Saved: {saved} | Errors: {errors}")
+    
     return {"saved": saved, "errors": errors}
 
 

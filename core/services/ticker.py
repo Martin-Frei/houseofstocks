@@ -65,12 +65,11 @@ def get_stock_prices() -> list:
             params={"select": "date_for", "order": "date_for.desc", "limit": "1"},
             timeout=5.0
         )
-        print(f"[TICKER] SPV2 Status: {r1.status_code}")
-        print(f"[TICKER] SPV2 Response: {r1.text[:200]}")
+        
         
         rows = r1.json()
         if not rows:
-            print("[TICKER] SPV2: keine Daten")
+            
             return []
 
         latest_date = r1.json()[0]['date_for']
@@ -104,7 +103,7 @@ def get_stock_prices() -> list:
         return result
 
     except Exception as e:
-        print(f"[TICKER] Stock prices error: {e}")
+        
         return []
 
 
@@ -157,7 +156,7 @@ def get_zone_news() -> list:
         return [zone_news[z] for z in sorted(zone_news.keys()) if z in zone_news]
 
     except Exception as e:
-        print(f"[TICKER] Zone news error: {e}")
+        
         return []
 
 
@@ -193,7 +192,7 @@ def get_global_mood() -> dict:
             "url":       None,
         }
     except Exception as e:
-        print(f"[TICKER] Global mood error: {e}")
+        
         return {}
 
 
@@ -232,7 +231,7 @@ def get_index_prices() -> list:
         return list(seen.values())
 
     except Exception as e:
-        print(f"[TICKER] Index prices error: {e}")
+        
         return []
 
 
