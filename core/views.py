@@ -1,19 +1,17 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from core.services.ticker import get_ticker_data
 
 
 def index(request):
-    """
-    Startseite — HouseofStocks Landing Page
-    Ticker-Daten: V1 statisch, TODO V2: Live-Daten aus Supabase
-    """
-    # TODO V2: Ticker-Daten live aus Supabase fetchen
-    ticker_data = []
-
+    from core.services.ticker import get_ticker_data
+    data = get_ticker_data()
+    print(f"[TICKER DEBUG] Items: {len(data)}")
+    if data:
+        print(f"[TICKER DEBUG] First: {data[0]}")
     return render(request, 'core/index.html', {
-        'ticker_data': ticker_data,
+        'ticker_data': data,
     })
-
 
 def preise(request):
     """

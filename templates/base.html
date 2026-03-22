@@ -1,82 +1,160 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}HouseofStocks{% endblock %}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/main.css' %}">
-{% block extra_css %}{% endblock %}
-</head>
-<body class="{{ theme_class|default:'' }}" id="hos-body">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}HouseofStocks{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body class="{{ theme_class|default:'' }}" id="hos-body">
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="{% url 'core:index' %}" class="logo">
+          <div class="logo-dot"></div>
+          <span class="logo-mark">HouseofStocks</span>
+        </a>
+        <div class="nav-links">
+          <a
+            href="{% url 'stockpredict:index' %}"
+            class="nav-link {% block nav_stocks %}{% endblock %}"
+            >Prognosen</a
+          >
+          <a
+            href="{% url 'core:preise' %}"
+            class="nav-link {% block nav_preise %}{% endblock %}"
+            >Preise</a
+          >
+          <a href="{% url 'marketmood:index' %}" class="nav-link">Marktlage</a>
+          <button
+            class="toggle-theme"
+            onclick="toggleTheme()"
+            title="Hell/Dunkel"
+          >
+            ◑
+          </button>
+          {% if user.is_authenticated %}
+          <span class="nav-user">{{ user.email }}</span>
+          <a href="{% url 'account_logout' %}" class="nav-btn nav-btn--outline"
+            >Abmelden</a
+          >
+          {% else %}
+          <a href="{% url 'account_login' %}" class="nav-link">Anmelden</a>
+          <a href="{% url 'account_signup' %}" class="nav-btn">Registrieren</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
 
-<nav class="nav">
-  <div class="nav-inner">
-    <a href="{% url 'core:index' %}" class="logo">
-      <div class="logo-dot"></div>
-      <span class="logo-mark">HouseofStocks</span>
-    </a>
-    <div class="nav-links">
-
-      <a href="{% url 'stockpredict:index' %}" class="nav-link {% block nav_stocks %}{% endblock %}">Prognosen</a>
-      <a href="{% url 'core:preise' %}" class="nav-link {% block nav_preise %}{% endblock %}">Preise</a>
-      <a href="{% url 'marketmood:index' %}" class="nav-link">Marktlage</a>
-      <button class="toggle-theme" onclick="toggleTheme()" title="Hell/Dunkel">◑</button>
-      {% if user.is_authenticated %}
-        <span class="nav-user">{{ user.email }}</span>
-        <a href="{% url 'account_logout' %}" class="nav-btn nav-btn--outline">Abmelden</a>
-      {% else %}
-        <a href="{% url 'account_login' %}" class="nav-link">Anmelden</a>
-        <a href="{% url 'account_signup' %}" class="nav-btn">Registrieren</a>
+    <div class="ticker">
+  <div class="ticker-inner">
+    {% for item in ticker_data %}
+      {% if item.type == 'stock' %}
+        <span class="tick-item">
+          <span class="tick-sym">{{ item.symbol }}</span>
+          <span class="tick-val">{{ item.value }}</span>
+          {% if item.direction == 'UP' %}<span class="tick-up">▲</span>
+          {% elif item.direction == 'DOWN' %}<span class="tick-dn">▼</span>
+          {% else %}<span class="tick-neu">—</span>{% endif %}
+        </span>
+      {% elif item.type == 'mood' %}
+        <span class="tick-item tick-item--mood">
+          <span class="tick-sym">{{ item.symbol }}</span>
+          <span class="tick-val {% if item.direction == 'BULLISH' %}tick-up{% elif item.direction == 'BEARISH' %}tick-dn{% else %}tick-neu{% endif %}">{{ item.value }}</span>
+          <span class="tick-mood-label {% if item.direction == 'BULLISH' %}tick-up{% elif item.direction == 'BEARISH' %}tick-dn{% else %}tick-neu{% endif %}">{{ item.direction }}</span>
+        </span>
+      {% elif item.type == 'news' %}
+        <span class="tick-item tick-item--news">
+          <span class="tick-zone">{{ item.symbol }}</span>
+          {% if item.url %}
+            <a href="{{ item.url }}" target="_blank" rel="noopener" class="tick-news-link">{{ item.value }}</a>
+          {% else %}
+            <span class="tick-news">{{ item.value }}</span>
+          {% endif %}
+        </span>
       {% endif %}
-    </div>
-  </div>
-</nav>
-
-{% block ticker %}{% endblock %}
-
-<main>
-  {% if messages %}
-    <div class="messages">
-      {% for message in messages %}
-        <div class="message message--{{ message.tags }}">{{ message }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
-  {% block content %}{% endblock %}
-</main>
-
-<!-- In base.html, direkt vor </footer> oder als eigener Block -->
-<div class="disclaimer">
-  <div class="disclaimer-inner">
-    <span class="disclaimer-label">RECHTLICHER HINWEIS</span>
-    <p class="disclaimer-text">
-      Alle auf HouseofStocks.dev dargestellten Inhalte, Signale und Analysen 
-      dienen ausschließlich zu Informations- und Bildungszwecken. Sie stellen 
-      keine Anlageberatung, Vermögensverwaltung oder Aufforderung zum Kauf oder 
-      Verkauf von Wertpapieren im Sinne des Wertpapierhandelsgesetzes (WpHG) dar. 
-      Vergangene Ergebnisse sind kein verlässlicher Indikator für zukünftige 
-      Entwicklungen. Investitionen in Wertpapiere sind mit Risiken verbunden, 
-      die bis zum Totalverlust des eingesetzten Kapitals führen können.
-    </p>
+    {% empty %}
+      <span class="tick-item"><span class="tick-sym">JPM</span><span class="tick-val">—</span></span>
+      <span class="tick-item"><span class="tick-sym">GLOBAL</span><span class="tick-val">WIRD GELADEN...</span></span>
+    {% endfor %}
+    {# Duplikat für nahtloses Scrollen #}
+    {% for item in ticker_data %}
+      {% if item.type == 'stock' %}
+        <span class="tick-item">
+          <span class="tick-sym">{{ item.symbol }}</span>
+          <span class="tick-val">{{ item.value }}</span>
+          {% if item.direction == 'UP' %}<span class="tick-up">▲</span>
+          {% elif item.direction == 'DOWN' %}<span class="tick-dn">▼</span>
+          {% else %}<span class="tick-neu">—</span>{% endif %}
+        </span>
+      {% elif item.type == 'mood' %}
+        <span class="tick-item tick-item--mood">
+          <span class="tick-sym">{{ item.symbol }}</span>
+          <span class="tick-val {% if item.direction == 'BULLISH' %}tick-up{% elif item.direction == 'BEARISH' %}tick-dn{% else %}tick-neu{% endif %}">{{ item.value }}</span>
+          <span class="tick-mood-label {% if item.direction == 'BULLISH' %}tick-up{% elif item.direction == 'BEARISH' %}tick-dn{% else %}tick-neu{% endif %}">{{ item.direction }}</span>
+        </span>
+      {% elif item.type == 'news' %}
+        <span class="tick-item tick-item--news">
+          <span class="tick-zone">{{ item.symbol }}</span>
+          {% if item.url %}
+            <a href="{{ item.url }}" target="_blank" rel="noopener" class="tick-news-link">{{ item.value }}</a>
+          {% else %}
+            <span class="tick-news">{{ item.value }}</span>
+          {% endif %}
+        </span>
+      {% endif %}
+    {% endfor %}
   </div>
 </div>
 
-<footer class="footer">
-  <div class="footer-inner">
-    <span class="footer-logo">HouseofStocks.dev</span>
-    <div class="footer-links">
-      <a href="#" class="footer-link">Impressum</a>
-      <a href="#" class="footer-link">Datenschutz</a>
-      <a href="mailto:kontakt@houseofstocks.dev" class="footer-link">Kontakt</a>
-    </div>
-    <span class="footer-copy">© 2026 — Rosenheim / München</span>
-  </div>
-</footer>
+    <main>
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+        <div class="message message--{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% block content %}{% endblock %}
+    </main>
 
-<script src="{% static 'js/theme.js' %}"></script>
-{% block extra_js %}{% endblock %}
-</body>
+    <!-- In base.html, direkt vor </footer> oder als eigener Block -->
+    <div class="disclaimer">
+      <div class="disclaimer-inner">
+        <span class="disclaimer-label">RECHTLICHER HINWEIS</span>
+        <p class="disclaimer-text">
+          Alle auf HouseofStocks.dev dargestellten Inhalte, Signale und Analysen
+          dienen ausschließlich zu Informations- und Bildungszwecken. Sie
+          stellen keine Anlageberatung, Vermögensverwaltung oder Aufforderung
+          zum Kauf oder Verkauf von Wertpapieren im Sinne des
+          Wertpapierhandelsgesetzes (WpHG) dar. Vergangene Ergebnisse sind kein
+          verlässlicher Indikator für zukünftige Entwicklungen. Investitionen in
+          Wertpapiere sind mit Risiken verbunden, die bis zum Totalverlust des
+          eingesetzten Kapitals führen können.
+        </p>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <span class="footer-logo">HouseofStocks.dev</span>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Impressum</a>
+          <a href="#" class="footer-link">Datenschutz</a>
+          <a href="mailto:kontakt@houseofstocks.dev" class="footer-link"
+            >Kontakt</a
+          >
+        </div>
+        <span class="footer-copy">© 2026 — Rosenheim / München</span>
+      </div>
+    </footer>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
 </html>
