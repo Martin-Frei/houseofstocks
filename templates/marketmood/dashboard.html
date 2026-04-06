@@ -182,4 +182,44 @@ document.addEventListener('DOMContentLoaded', () => {
   {% if "DACH" in active_zones %}showZone('DACH');{% endif %}
 });
 </script>
+
+{# ── DISCLAIMER MODAL ──────────────────────────────────────── #}
+<div class="modal-overlay" id="gmm-modal">
+  <div class="modal-box">
+    <div class="modal-title">Experimenteller Status</div>
+    <div class="modal-subtitle">BETA — BITTE VOR DEM FORTFAHREN LESEN</div>
+    <div class="modal-items">
+      <div class="modal-item">
+        <span class="modal-item-icon">01</span>
+        <p><strong>Global Market Mood</strong> — KI-gestützte Sentiment-Analyse von über 100.000 Nachrichtenartikeln täglich. Klassifikation via DeepSeek + VADER. KI-Systeme können fehlerhaft klassifizieren.</p>
+      </div>
+      <div class="modal-item">
+        <span class="modal-item-icon">02</span>
+        <p><strong>StockPredict V2</strong> — LSTM + XGBoost Ensemble für 12 US-Bankaktien. Backtesting-Ergebnisse sind keine Garantie für zukünftige Performance. Paper Trading Modus.</p>
+      </div>
+      <div class="modal-item">
+        <span class="modal-item-icon">03</span>
+        <p><strong>Keine Anlageberatung</strong> — Alle Daten dienen ausschließlich zu Bildungs- und Informationszwecken im Sinne des WpHG. Keine Handelsentscheidungen auf Basis dieser Daten treffen.</p>
+      </div>
+      <div class="modal-item">
+        <span class="modal-item-icon">04</span>
+        <p><strong>Beta-Stadium</strong> — HouseofStocks.dev befindet sich in aktiver Entwicklung. Daten können unvollständig oder fehlerhaft sein.</p>
+      </div>
+    </div>
+    <button class="modal-accept" onclick="acceptGmmDisclaimer()">
+      VERSTANDEN — WEITER ZUR ANALYSE
+    </button>
+  </div>
+</div>
+
+<script>
+function acceptGmmDisclaimer() {
+  sessionStorage.setItem('gmm_disclaimer_accepted', 'true');
+  document.getElementById('gmm-modal').style.display = 'none';
+}
+if (sessionStorage.getItem('gmm_disclaimer_accepted') === 'true') {
+  document.getElementById('gmm-modal').style.display = 'none';
+}
+</script>
+
 {% endblock %}

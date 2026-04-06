@@ -47,7 +47,7 @@ houseofstocks/           ← Django Projekt Root
 - GMM Daten (articles, mood_snapshots) bereits dort
 - SPV2 Daten auf separatem Supabase Projekt — nur lesend per REST API
 - Kein extra Railway Postgres Service nötig
-- Django verbindet sich direkt per psycopg2 (DB_HOST: db.djkvuqbirkxskovhhtns.supabase.co)
+- Django verbindet sich direkt per psycopg2 (DB_HOST: db.djkvu.supabase.co)
 
 **Datenstruktur:**
 ```
