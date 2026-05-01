@@ -41,7 +41,7 @@ def start():
     scheduler.add_job(
         run_pipeline,
         'interval',
-        hours=1,
+        hours=3,
         id='gmm_hourly',
         replace_existing=True,
         jobstore='default'
@@ -58,5 +58,5 @@ def start():
     )
 
     scheduler.start()
-    logger.info("[SCHEDULER] Started — running every hour.")
+    logger.info("[SCHEDULER] Started — running three hour.")
     return scheduler
