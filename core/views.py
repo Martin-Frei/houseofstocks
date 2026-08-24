@@ -61,7 +61,7 @@ def health_check(request):
     issues = []
     checks = {}
     threshold = datetime.now(timezone.utc) - timedelta(hours=4)
-    threshold_iso = threshold.isoformat()
+    threshold_iso = threshold.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     headers = {
         "apikey": settings.SUPABASE_ANON_KEY,
