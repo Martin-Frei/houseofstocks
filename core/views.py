@@ -73,7 +73,7 @@ def health_check(request):
     threshold_iso = threshold.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     headers = {
-        # NEU (temporär zum Testen):
+        # SERVICE_KEY wegen RLS auf gefilterten Queries
         "apikey": settings.SUPABASE_SERVICE_KEY,
         "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
     }
@@ -87,14 +87,8 @@ def health_check(request):
             "order": "created_at.desc",
             "limit": "1",
         }
-        print(f"[HEALTH] URL: {url}")
-        print(f"[HEALTH] Threshold: {threshold_iso}")
-        print(f"[HEALTH] Params: {params}")
 
         r = httpx.get(url, headers=headers, params=params, timeout=8.0)
-
-        print(f"[HEALTH] Status: {r.status_code}")
-        print(f"[HEALTH] Response: {r.text[:200]}")
 
         if r.status_code == 200:
             rows = r.json()
@@ -124,14 +118,8 @@ def health_check(request):
             "order": "created_at.desc",
             "limit": "1",
         }
-        print(f"[HEALTH] Articles URL: {url2}")
-        print(f"[HEALTH] Articles Params: {params2}")
 
         r = httpx.get(url2, headers=headers, params=params2, timeout=8.0)
-
-        print(f"[HEALTH] Articles Status: {r.status_code}")
-        print(f"[HEALTH] Articles Response: {r.text[:200]}")
-
         if r.status_code == 200:
             rows = r.json()
             if rows:

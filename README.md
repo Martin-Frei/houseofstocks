@@ -20,7 +20,7 @@ HouseofStocks ist ein Django-Monolith der zwei eigenständige ML-Projekte unter 
 ```
 houseofstocks.dev (Railway — EU West)
 │
-├── core/          Startseite, Landing, Disclaimer
+├── core/          Startseite, Landing, Disclaimer, Health Check
 ├── accounts/      Login, Signup, UserProfile, Tier-System
 ├── marketmood/    GMM Pipeline + Dashboard + Weltkarte  ← Hauptprojekt
 └── stockpredict/  SPV2 Read-Only Viewer
@@ -112,6 +112,7 @@ FINANCE_LEXICON = {
 | ORM Connector | psycopg2-binary | PostgreSQL direkt |
 | Static Files | Whitenoise | Kein CDN für V1 nötig |
 | Hosting | Railway (EU West) | Einfaches Deployment, bekannte Platform |
+| Monitoring | UptimeRobot | HTTP + Keyword Monitoring, Free Tier |
 | CSS | Reines CSS | Kein Build-Prozess (kein Tailwind, kein Webpack) |
 | Fonts | Instrument Serif + DM Mono + Geist | FinTech Premium Ästhetik |
 
@@ -157,6 +158,11 @@ SPV2 Pipeline (separater Railway Service)
 
 **Retention-Strategie:** 20 Tage — genug für Trend-Analyse, verhindert unbegrenztes DB-Wachstum auf dem Supabase Free Tier.
 
+**Manueller Pipeline-Trigger** via Railway CLI:
+```bash
+railway run python manage.py shell -c "from marketmood.scheduler import run_pipeline; run_pipeline()"
+```
+
 ---
 
 ## Monitoring & Health Check
@@ -174,15 +180,17 @@ Die Seite kann erreichbar sein und trotzdem keine Daten anzeigen — wenn Supaba
 
 **Warum 4 Stunden:** Die Pipeline läuft alle 3 Stunden. 4h gibt eine Stunde Puffer — eine ausgefallene Runde wird erkannt, ohne bei normalem Timing false positives zu erzeugen.
 
+**Warum SERVICE_KEY:** Supabase RLS blockiert den ANON_KEY bei gefilterten Queries (`WHERE created_at >= ...`), obwohl ungefilterte Queries funktionieren. Der Health Check nutzt deshalb den SERVICE_KEY — das ist sicher weil der Endpoint nur `created_at` liest, nichts schreibt, und der Key nur als Referenz (`settings.SUPABASE_SERVICE_KEY`) im Code steht, nicht als Wert.
+
 ```json
 // Healthy (200)
 {
   "status": "healthy",
   "checks": {
     "snapshots": "ok",
-    "latest_snapshot": "2026-08-24T18:00:12Z",
+    "latest_snapshot": "2026-08-24T19:56:19.16038+00:00",
     "articles": "ok",
-    "latest_article": "2026-08-24T17:58:44Z"
+    "latest_article": "2026-08-24T19:55:31.884918+00:00"
   }
 }
 
@@ -200,31 +208,37 @@ Die Seite kann erreichbar sein und trotzdem keine Daten anzeigen — wenn Supaba
 
 ### UptimeRobot Konfiguration
 
-| Einstellung | Wert |
-|------------|------|
-| Monitor Type | Keyword |
-| URL | `https://houseofstocks.dev/api/health/` |
-| Keyword | `healthy` |
-| Keyword Type | Exists |
-| Interval | 5 Minuten |
-| Alert Contact | Email / Push |
+Zwei Monitore laufen parallel:
 
-So werden beide Szenarien abgedeckt: Seite komplett down (HTTP-Fehler) und Seite läuft aber ohne Daten (Keyword fehlt in 503-Response).
+| Monitor | Type | URL | Prüft |
+|---------|------|-----|-------|
+| www.houseofstocks.dev | HTTP(s) | `https://houseofstocks.dev` | Seite erreichbar? |
+| HoS Health Check | Keyword | `https://houseofstocks.dev/api/health/` | Daten frisch? |
+
+Der Keyword Monitor sucht nach `"healthy"` in der Response. Wenn das Wort fehlt (503, Timeout, oder kaputte Response) → Alert per Email/Push.
 
 ### Monitoring-Architektur
 
 ```
 UptimeRobot (alle 5 min)
     │
-    ├── GET /api/health/
-    │   ├── Supabase mood_snapshots  → frisch? ✓/✗
-    │   └── Supabase articles        → frisch? ✓/✗
+    ├── Monitor 1: HTTP(s)
+    │   └── GET houseofstocks.dev → Seite erreichbar?
     │
-    ├── 200 + "healthy"  → alles ok
-    └── 503 / Timeout    → Alert per Email/Push
+    ├── Monitor 2: Keyword
+    │   └── GET /api/health/
+    │       ├── Supabase mood_snapshots  → frisch? ✓/✗
+    │       └── Supabase articles        → frisch? ✓/✗
+    │       (SERVICE_KEY wegen RLS)
+    │
+    ├── "healthy" exists   → alles ok
+    └── "healthy" missing  → Alert per Email/Push
+
+Railway Notifications (Settings → Notifications)
+└── Fehlgeschlagene Builds/Deploys → Email Alert
 ```
 
-Railway Deployment Notifications (Settings → Notifications) decken zusätzlich fehlgeschlagene Builds und Deploys ab.
+---
 
 ## Projektstruktur
 
@@ -235,9 +249,12 @@ houseofstocks/
 │   ├── urls.py             URL-Routing
 │   └── wsgi.py
 │
-├── core/                   Startseite, Preisseite, Disclaimer
+├── core/                   Startseite, Preisseite, Disclaimer, Health Check
+│   ├── views.py                index, preise, waitlist, health_check
+│   ├── urls.py                 / + /preise/ + /waitlist/ + /api/health/
 │   ├── context_processors.py   Ticker-Daten für alle Templates
-│   └── ticker.py
+│   └── services/
+│       └── ticker.py           Live-Ticker (Aktien + News + GMM Score)
 │
 ├── accounts/               Auth-Erweiterung
 │   └── models.py           UserProfile + Tier-System + Django Signals
@@ -306,6 +323,7 @@ houseofstocks/
 | Railway Web Service | ~$5 |
 | DeepSeek Klassifikation | ~$19 |
 | Supabase (Free Tier) | $0 |
+| UptimeRobot (Free Tier) | $0 |
 | Domain houseofstocks.dev | ~$1 |
 | **Gesamt** | **~$25/Monat** |
 
@@ -365,7 +383,7 @@ SPV2_SUPABASE_ANON_KEY=
 DEEPSEEK_API_KEY=
 ```
 
-**Wichtig:** `SUPABASE_SERVICE_KEY` wird für serverseitige Schreibzugriffe benötigt (umgeht Row-Level-Security). Niemals in Git committen.
+**Wichtig:** `SUPABASE_SERVICE_KEY` wird für serverseitige Zugriffe benötigt (umgeht Row-Level-Security). Wird sowohl für Pipeline-Schreibzugriffe als auch für den Health Check Endpoint verwendet. Niemals in Git committen.
 
 ---
 
@@ -378,7 +396,15 @@ Start:    gunicorn houseofstocks.wsgi --bind 0.0.0.0:$PORT
 ```
 
 DNS via Namecheap → Railway CNAME.  
-UptimeRobot pingt alle 5 Minuten um Railway Cold Starts zu verhindern.
+UptimeRobot pingt alle 5 Minuten — verhindert Railway Cold Starts und überwacht Pipeline-Freshness via `/api/health/`.
+
+### Railway CLI
+
+```bash
+railway login          # Browser-Login
+railway link           # Projekt verknüpfen
+railway run <command>  # Befehl auf Railway ausführen
+```
 
 ---
 
@@ -389,6 +415,7 @@ UptimeRobot pingt alle 5 Minuten um Railway Cold Starts zu verhindern.
 - Weltkarte mit jsVectorMap
 - Tier-System (Free/Pro/Premium)
 - SPV2 Read-Layer
+- Health Check Endpoint + UptimeRobot Monitoring
 
 ### V2 — Nach Launch
 - Stripe Integration für Paid Tiers
@@ -413,4 +440,4 @@ Vor dem Launch bezahlter Handelssignale: Rechtsberatung für FinTech/Kapitalmark
 
 ---
 
-*Repository: privat · Letztes Update: Juni 2026*
+*Repository: privat · Letztes Update: August 2026*
