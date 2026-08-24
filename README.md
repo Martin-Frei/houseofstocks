@@ -159,6 +159,73 @@ SPV2 Pipeline (separater Railway Service)
 
 ---
 
+## Monitoring & Health Check
+
+Die Seite kann erreichbar sein und trotzdem keine Daten anzeigen — wenn Supabase nicht antwortet oder die Pipeline hängt, liefert Django ein leeres Dashboard mit HTTP 200. Ein einfacher Uptime-Check erkennt das nicht.
+
+### Health Endpoint
+
+`GET /api/health/` prüft den tatsächlichen Datenfluss:
+
+| Check | Was wird geprüft | Schwelle |
+|-------|-----------------|----------|
+| `snapshots` | Letzter `mood_snapshot` in Supabase | < 4 Stunden alt |
+| `articles` | Letzter Artikel in Supabase | < 4 Stunden alt |
+
+**Warum 4 Stunden:** Die Pipeline läuft alle 3 Stunden. 4h gibt eine Stunde Puffer — eine ausgefallene Runde wird erkannt, ohne bei normalem Timing false positives zu erzeugen.
+
+```json
+// Healthy (200)
+{
+  "status": "healthy",
+  "checks": {
+    "snapshots": "ok",
+    "latest_snapshot": "2026-08-24T18:00:12Z",
+    "articles": "ok",
+    "latest_article": "2026-08-24T17:58:44Z"
+  }
+}
+
+// Unhealthy (503)
+{
+  "status": "unhealthy",
+  "issues": ["Kein mood_snapshot in den letzten 4 Stunden"],
+  "checks": {
+    "snapshots": "stale",
+    "articles": "ok",
+    "latest_article": "2026-08-24T17:58:44Z"
+  }
+}
+```
+
+### UptimeRobot Konfiguration
+
+| Einstellung | Wert |
+|------------|------|
+| Monitor Type | Keyword |
+| URL | `https://houseofstocks.dev/api/health/` |
+| Keyword | `healthy` |
+| Keyword Type | Exists |
+| Interval | 5 Minuten |
+| Alert Contact | Email / Push |
+
+So werden beide Szenarien abgedeckt: Seite komplett down (HTTP-Fehler) und Seite läuft aber ohne Daten (Keyword fehlt in 503-Response).
+
+### Monitoring-Architektur
+
+```
+UptimeRobot (alle 5 min)
+    │
+    ├── GET /api/health/
+    │   ├── Supabase mood_snapshots  → frisch? ✓/✗
+    │   └── Supabase articles        → frisch? ✓/✗
+    │
+    ├── 200 + "healthy"  → alles ok
+    └── 503 / Timeout    → Alert per Email/Push
+```
+
+Railway Deployment Notifications (Settings → Notifications) decken zusätzlich fehlgeschlagene Builds und Deploys ab.
+
 ## Projektstruktur
 
 ```
