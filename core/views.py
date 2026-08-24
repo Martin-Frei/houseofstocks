@@ -9,20 +9,26 @@ from core.services.ticker import get_ticker_data
 
 def index(request):
     from core.services.ticker import get_ticker_data
+
     data = get_ticker_data()
     print(f"[TICKER DEBUG] Items: {len(data)}")
     if data:
         print(f"[TICKER DEBUG] First: {data[0]}")
-    return render(request, 'core/index.html', {
-        'ticker_data': data,
-    })
+    return render(
+        request,
+        "core/index.html",
+        {
+            "ticker_data": data,
+        },
+    )
+
 
 def preise(request):
     """
     Preisseite — Free / Pro / Premium
     TODO V2: Stripe Checkout Links einbinden
     """
-    return render(request, 'core/preise.html')
+    return render(request, "core/preise.html")
 
 
 def waitlist(request):
@@ -30,15 +36,17 @@ def waitlist(request):
     Warteliste — Email eintragen
     TODO V2: Email in Supabase speichern + Resend Bestätigungsmail
     """
-    if request.method == 'POST':
-        email = request.POST.get('email', '').strip()
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
         if email:
             # TODO V2: Email in Supabase waitlist Tabelle speichern
             # TODO V2: Resend API Bestätigungsmail senden
-            messages.success(request, f'Du bist auf der Warteliste! Wir melden uns bei {email}.')
+            messages.success(
+                request, f"Du bist auf der Warteliste! Wir melden uns bei {email}."
+            )
         else:
-            messages.error(request, 'Bitte gib eine gültige E-Mail-Adresse ein.')
-    return redirect('core:index')
+            messages.error(request, "Bitte gib eine gültige E-Mail-Adresse ein.")
+    return redirect("core:index")
 
 
 # ============================================================
@@ -57,6 +65,7 @@ def waitlist(request):
 #   ausgefallene Runde ohne false positives bei normalem Timing.
 # ============================================================
 
+
 def health_check(request):
     issues = []
     checks = {}
@@ -64,8 +73,9 @@ def health_check(request):
     threshold_iso = threshold.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     headers = {
-        "apikey": settings.SUPABASE_ANON_KEY,
-        "Authorization": f"Bearer {settings.SUPABASE_ANON_KEY}",
+        # NEU (temporär zum Testen):
+        "apikey": settings.SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
     }
 
     # ── Check 1: mood_snapshots (Pipeline-Output) ──
