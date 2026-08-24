@@ -70,17 +70,22 @@ def health_check(request):
 
     # ── Check 1: mood_snapshots (Pipeline-Output) ──
     try:
-        r = httpx.get(
-            f"{settings.SUPABASE_URL}/rest/v1/mood_snapshots",
-            headers=headers,
-            params={
-                "select": "created_at",
-                "created_at": f"gte.{threshold_iso}",
-                "order": "created_at.desc",
-                "limit": "1",
-            },
-            timeout=8.0,
-        )
+        url = f"{settings.SUPABASE_URL}/rest/v1/mood_snapshots"
+        params = {
+            "select": "created_at",
+            "created_at": f"gte.{threshold_iso}",
+            "order": "created_at.desc",
+            "limit": "1",
+        }
+        print(f"[HEALTH] URL: {url}")
+        print(f"[HEALTH] Threshold: {threshold_iso}")
+        print(f"[HEALTH] Params: {params}")
+
+        r = httpx.get(url, headers=headers, params=params, timeout=8.0)
+
+        print(f"[HEALTH] Status: {r.status_code}")
+        print(f"[HEALTH] Response: {r.text[:200]}")
+
         if r.status_code == 200:
             rows = r.json()
             if rows:
@@ -102,17 +107,21 @@ def health_check(request):
 
     # ── Check 2: articles (Feed-Input) ──
     try:
-        r = httpx.get(
-            f"{settings.SUPABASE_URL}/rest/v1/articles",
-            headers=headers,
-            params={
-                "select": "created_at",
-                "created_at": f"gte.{threshold_iso}",
-                "order": "created_at.desc",
-                "limit": "1",
-            },
-            timeout=8.0,
-        )
+        url2 = f"{settings.SUPABASE_URL}/rest/v1/articles"
+        params2 = {
+            "select": "created_at",
+            "created_at": f"gte.{threshold_iso}",
+            "order": "created_at.desc",
+            "limit": "1",
+        }
+        print(f"[HEALTH] Articles URL: {url2}")
+        print(f"[HEALTH] Articles Params: {params2}")
+
+        r = httpx.get(url2, headers=headers, params=params2, timeout=8.0)
+
+        print(f"[HEALTH] Articles Status: {r.status_code}")
+        print(f"[HEALTH] Articles Response: {r.text[:200]}")
+
         if r.status_code == 200:
             rows = r.json()
             if rows:
