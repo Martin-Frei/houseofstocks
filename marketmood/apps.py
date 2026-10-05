@@ -1,3 +1,6 @@
+# marketmood/apps.py
+
+
 from django.apps import AppConfig
 import os
 import sys
@@ -7,7 +10,10 @@ class MarketmoodConfig(AppConfig):
     name = 'marketmood'
 
     def ready(self):
-        if any(cmd in sys.argv for cmd in ['migrate', 'check', 'collectstatic', 'makemigrations']):
+        if any(cmd in sys.argv for cmd in [
+            'migrate', 'check', 'collectstatic', 'makemigrations',
+            'run_pipeline', 'cleanup_articles',
+        ]):
             return
         try:
             from .scheduler import start
