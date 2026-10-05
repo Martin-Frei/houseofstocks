@@ -1,5 +1,7 @@
 # mood/pipeline/topic_filter.py
 # ============================================================
+# after update 2026-10-05
+#
 # TOPIC CLASSIFICATION — DeepSeek API Batch Classifier
 # V1: DeepSeek klassifiziert alle Headlines kontextbasiert
 # TODO V2: Eigenes Modell auf DeepSeek-Labels trainieren
@@ -151,20 +153,15 @@ def classify_topic(text: str, region: str = "DE") -> tuple[str, list]:
         return "general", []
 
 
-def enrich_articles(articles: list, region: str = None) -> list:
+def enrich_articles(articles: list) -> list:
     if not articles:
         return []
 
     # DEBUG
     api_key = getattr(settings, "DEEPSEEK_API_KEY", None)
-    print(f"[DEBUG] DEEPSEEK_API_KEY = '{api_key}'")
+    print(f"[DEEPSEEK] API Key vorhanden: {bool(api_key)}")
     
     if not api_key:
-        print("[DEEPSEEK] No API key — all articles set to general")
-        return [{**a, "topic": "general", "matched_keywords": []} for a in articles]
-
-    # API Key Check
-    if not getattr(settings, "DEEPSEEK_API_KEY", None):
         print("[DEEPSEEK] No API key — all articles set to general")
         return [{**a, "topic": "general", "matched_keywords": []} for a in articles]
 
