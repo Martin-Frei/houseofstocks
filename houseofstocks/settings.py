@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "anymail",
     "django_apscheduler",
     # Local apps
     "core",
@@ -113,6 +114,29 @@ LOGOUT_REDIRECT_URL = "/"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+# E-Mail (F-05)
+# Produktion: Brevo-HTTP-API über django-anymail.
+#   Kein SMTP, weil Railway Hobby ausgehendes SMTP sperrt.
+# Lokal (DEBUG=True): Console-Backend, Mails erscheinen im Terminal.
+# Der Standard ist bewusst NICHT console: Fehlt auf Railway eine Variable,
+# soll das Senden laut scheitern statt still in die Logs zu schreiben.
+_default_email_backend = (
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "anymail.backends.brevo.EmailBackend"
+)
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", _default_email_backend)
+
+ANYMAIL = {
+    "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
+}
+
+# Absender muss in Brevo verifiziert sein (houseofstocks.dev ist authentifiziert)
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL", "HouseofStocks <noreply@houseofstocks.dev>"
+)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # APScheduler
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
