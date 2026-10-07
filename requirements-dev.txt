@@ -32,3 +32,6 @@ supabase==2.28.2
 
 # Auth / JWT
 PyJWT==2.12.1
+
+# E-Mail (Brevo über django-anymail, F-05)
+django-anymail[brevo]==15.2
