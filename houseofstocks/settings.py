@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "anymail",
-    "django_apscheduler",
     # Local apps
     "core",
     "accounts",
@@ -137,10 +136,6 @@ DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL", "HouseofStocks <noreply@houseofstocks.dev>"
 )
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
-
-# APScheduler
-APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
-APSCHEDULER_RUN_NOW_TIMEOUT = 25
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

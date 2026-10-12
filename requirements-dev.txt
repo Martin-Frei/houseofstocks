@@ -9,10 +9,6 @@ setuptools>=70.0.0
 # Auth
 django-allauth==65.15.0
 
-# Scheduler
-django-apscheduler==0.7.0
-APScheduler==3.11.2
-
 # HTTP / Feeds
 httpx==0.28.1
 feedparser==6.0.12
