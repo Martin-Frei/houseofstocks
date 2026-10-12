@@ -28,7 +28,7 @@ houseofstocks.dev (Railway — EU West)
          ├── Supabase (global_market_mood)   ← GMM schreibt & liest hier
          │   ├── articles          (Headlines, max. 20 Tage)
          │   ├── mood_snapshots    (stündliches Stimmungsbild pro Region)
-         │   └── Django Tabellen   (accounts, sessions, apscheduler_jobs)
+         │   └── Django Tabellen   (accounts, sessions)
          │
          └── Supabase (portfolio_site)        ← SPV2 nur lesend
              └── predictions       (tägl. Vorhersagen, 12 Bankaktien)
@@ -41,7 +41,7 @@ Shared Authentication und ein gemeinsames Tier-System (`free/pro/premium`) gelte
 
 ## GMM Pipeline — Wie sie funktioniert
 
-Die Pipeline läuft automatisch alle 3 Stunden via APScheduler (in-process, kein extra Service).
+Die Pipeline läuft alle 3 Stunden als eigener Railway-Cron-Service (`python manage.py run_pipeline`) – getrennt vom Web-Prozess, siehe [Job-System](#job-system).
 
 ```
 RSS Feeds (~200 Quellen, ~100 Länder)
@@ -103,7 +103,7 @@ FINANCE_LEXICON = {
 |---|---|---|
 | Backend | Django 5.2 | Vertraut, Auth + Admin inklusive |
 | Authentifizierung | django-allauth | Email-Verifizierung, Social Login vorbereitet |
-| Scheduler | APScheduler + django-apscheduler | In-process, kein extra Service/Kosten |
+| Scheduler | Railway Cron Services | Ein Prozess pro Lauf, eigener Exit-Code und Log, kein Doppellauf |
 | Datenbank | Supabase PostgreSQL | GMM-Daten bereits dort, REST-API inkl. |
 | Async HTTP | httpx | Für DeepSeek Batch-Calls |
 | Feed-Parser | feedparser | RSS 1.0/2.0/Atom out-of-the-box |
@@ -117,7 +117,7 @@ FINANCE_LEXICON = {
 | Fonts | Instrument Serif + DM Mono + Geist | FinTech Premium Ästhetik |
 
 **Bewusst nicht verwendet:**
-- Celery/Redis → APScheduler reicht, ein Service weniger
+- Celery/Redis → zwei Cron-Services reichen, kein Broker und kein dauerhaft laufender Worker
 - Tailwind CSS → braucht Build-Prozess, unnötige Komplexität für Railway
 - React/Vue → Django Templates reichen für V1
 - Railway Postgres → Supabase bereits vorhanden
@@ -141,27 +141,34 @@ Jeder neue User bekommt automatisch `tier='free'` via Django Signal (`post_save`
 ## Job-System
 
 ```
-APScheduler (in-process, Background Thread)
-├── run_pipeline      alle 3 Stunden
-│   ├── fetch_all_sources()     RSS weltweit
-│   ├── enrich_articles()       DeepSeek Klassifikation
-│   ├── analyze_all()           VADER Sentiment
-│   ├── save_articles()         → Supabase articles (upsert)
-│   └── run_aggregator()        → Supabase mood_snapshots (insert)
+Railway Cron Services (je ein eigener Service aus demselben Repo)
+├── gmm-pipeline-cron   0 */3 * * *  (alle 3 Stunden, UTC)
+│   └── python manage.py run_pipeline → marketmood/pipeline/runner.py
+│       ├── fetch_all_sources()     RSS weltweit
+│       ├── enrich_articles()       DeepSeek Klassifikation
+│       ├── analyze_all()           VADER Sentiment
+│       ├── save_articles()         → Supabase articles (upsert)
+│       └── run_aggregator()        → Supabase mood_snapshots (insert)
 │
-└── cleanup_articles   täglich 02:00 UTC
-    └── Artikel älter als 20 Tage löschen
+└── gmm-cleanup-cron    0 2 * * *    (täglich 02:00 UTC)
+    └── python manage.py cleanup_articles
+        └── Artikel älter als 20 Tage löschen
 
 SPV2 Pipeline (separater Railway Service)
 └── Alpha Routine     täglich 00:00 UTC (LSTM + XGBoost, schreibt in portfolio_site)
 ```
 
+### Warum Cron-Services statt In-Process-Scheduler
+
+Bis Oktober 2026 lief ein APScheduler-`BackgroundScheduler`, gestartet in `AppConfig.ready()`. Das hatte vier Folgen: Jeder Gunicorn-Worker und jeder `manage.py`-Befehl konnte einen eigenen Scheduler starten (→ doppelte Läufe und DeepSeek-Kosten), jeder Deploy setzte den 3-Stunden-Timer zurück, Fehler verschwanden in einem Hintergrund-Thread, und die Pipeline teilte sich CPU und Speicher mit dem Web-Prozess.
+
+Jetzt ist jeder Lauf ein eigener Prozess: Er startet nach Uhrzeit (Deploys verschieben nichts), endet mit Exit-Code 0 oder 1, hat ein eigenes Log, und Railway überspringt einen Lauf, solange der vorherige noch läuft. Pipeline und Cleanup sind getrennte Services – scheitert einer, läuft der andere trotzdem.
+
 **Retention-Strategie:** 20 Tage — genug für Trend-Analyse, verhindert unbegrenztes DB-Wachstum auf dem Supabase Free Tier.
 
-**Manueller Pipeline-Trigger** via Railway CLI:
-```bash
-railway run python manage.py shell -c "from marketmood.scheduler import run_pipeline; run_pipeline()"
-```
+**Manueller Pipeline-Lauf:**
+- Live: im Railway-Dashboard beim Service `gmm-pipeline-cron` einen Lauf starten
+- Lokal: `python manage.py run_pipeline` – **Achtung:** schreibt über die REST-API in die echten GMM-Daten
 
 ---
 
@@ -245,7 +252,7 @@ Railway Notifications (Settings → Notifications)
 ```
 houseofstocks/
 ├── houseofstocks/          Django Projekt Root
-│   ├── settings.py         Konfiguration (Supabase, DeepSeek, APScheduler)
+│   ├── settings.py         Konfiguration (Supabase, DeepSeek, E-Mail)
 │   ├── urls.py             URL-Routing
 │   └── wsgi.py
 │
@@ -266,9 +273,11 @@ houseofstocks/
 │   │   ├── topic_filter.py     DeepSeek Batch-Klassifikation
 │   │   ├── sentiment.py        VADER + Finance Lexicon
 │   │   ├── aggregator.py       Score-Berechnung (Option B)
-│   │   └── supabase_client.py  DB-Schicht (read + write)
-│   ├── scheduler.py            APScheduler Jobs
-│   └── apps.py                 Scheduler-Start via ready()
+│   │   ├── supabase_client.py  DB-Schicht (read + write)
+│   │   └── runner.py           Orchestrierung der 5 Schritte
+│   └── management/commands/
+│       ├── run_pipeline.py     Einstieg für gmm-pipeline-cron
+│       └── cleanup_articles.py Einstieg für gmm-cleanup-cron
 │
 ├── stockpredict/           SPV2 Read-Only
 │   └── services.py             Supabase REST API Read-Layer
