@@ -13,18 +13,41 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-placeholder-only-for-dev")
-
 DEBUG = os.getenv("DEBUG", "False") == "True"
+
+# F-09: In Produktion kein Fallback – lieber nicht starten als mit bekanntem Schlüssel.
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "django-insecure-local-dev-only"
+    else:
+        raise ImproperlyConfigured("SECRET_KEY fehlt – in Produktion Pflicht (F-09).")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost").split(",")
 
+
+# HTTPS hinter dem Railway-Proxy (F-09)
+# Railway entschlüsselt am Rand und leitet intern HTTP weiter; ob der Browser
+# HTTPS benutzt hat, steht nur im Header X-Forwarded-Proto.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# allauth setzt das Protokoll in Mail-Links selbst (Standard: http)
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http" if DEBUG else "https"
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 Jahr
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
