@@ -14,6 +14,14 @@ Warum nicht `migrate django_apscheduler zero`:
     Außerdem führt Railway beim Deploy nur `migrate` vorwärts aus – diese Migration
     läuft dagegen automatisch auf jeder DB.
 
+Warum ohne CASCADE (F-41):
+    `DROP TABLE … CASCADE` gibt es nur in Postgres; SQLite (Test-DB, CI) bricht mit
+    einem Syntaxfehler ab. CASCADE ist hier auch nicht nötig: Zuerst wird
+    djangojobexecution gelöscht – die Tabelle, die den Fremdschlüssel auf
+    djangojob hält. Danach hängt nichts mehr an djangojob.
+    Auf bestehenden DBs (Supabase lokal und live) ist die Migration bereits
+    angewendet und läuft nie wieder; die Änderung wirkt nur auf neuen DBs.
+
 Funktionen:
     keine (nur RunSQL)
 
@@ -24,12 +32,14 @@ Abhängigkeiten:
 Start/Test:
     python manage.py migrate marketmood --plan
     python manage.py migrate marketmood
+    pytest   (legt eine frische SQLite-Test-DB an und führt alle Migrationen aus)
 """
 from django.db import migrations
 
+# Reihenfolge ist wichtig: erst die Tabelle mit dem Fremdschlüssel.
 DROP_APSCHEDULER = """
-DROP TABLE IF EXISTS "django_apscheduler_djangojobexecution" CASCADE;
-DROP TABLE IF EXISTS "django_apscheduler_djangojob" CASCADE;
+DROP TABLE IF EXISTS "django_apscheduler_djangojobexecution";
+DROP TABLE IF EXISTS "django_apscheduler_djangojob";
 DELETE FROM django_migrations WHERE app = 'django_apscheduler';
 """
 
@@ -44,4 +54,3 @@ class Migration(migrations.Migration):
         # dann legt deren eigene 0001 die Tabellen wieder an.
         migrations.RunSQL(DROP_APSCHEDULER, reverse_sql=migrations.RunSQL.noop),
     ]
-    
