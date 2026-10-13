@@ -99,7 +99,7 @@ def test_aborts_before_enrich_when_no_articles(steps):
     with pytest.raises(RuntimeError, match="0 articles"):
         run_pipeline()
 
-    steps.fetch.assert_called_once_with()   # NEU: beweist, dass der Mock gegriffen hat
+    steps.fetch.assert_called_once_with()  # beweist, dass der Mock gegriffen hat
     steps.enrich.assert_not_called()
     steps.analyze.assert_not_called()
     steps.save.assert_not_called()
