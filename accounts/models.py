@@ -1,10 +1,8 @@
+# accounts/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
-# Create your models here.
-
 
 
 class UserProfile(models.Model):
@@ -72,15 +70,16 @@ class UserProfile(models.Model):
         verbose_name_plural = 'User Profiles'
 
 
-# ─── Signal: UserProfile automatisch anlegen bei neuem User ──────────────────
-# Wenn ein neuer User sich registriert, wird automatisch ein
-# UserProfile mit Stufe 'free' erstellt – kein manueller Schritt nötig.
+# ─── Signal: Profil sicherstellen (F-12) ──────────────────────────────────────
+# Läuft bei JEDEM Speichern eines Users: Neuanlage, Login (last_login), Admin.
+# Neuer User → Profil mit Stufe 'free', kein manueller Schritt nötig.
+# get_or_create statt create + .profile.save(): Fehlt das Profil (User vor der
+# Profil-Migration, gelöschtes Profil, Import), wird es angelegt, statt mit
+# RelatedObjectDoesNotExist abzustürzen.
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+def ensure_user_profile(sender, instance, raw=False, **kwargs):
+    if raw:
+        # loaddata: Daten werden 1:1 eingespielt, Profile bringt der Import selbst mit.
+        return
+    UserProfile.objects.get_or_create(user=instance)
