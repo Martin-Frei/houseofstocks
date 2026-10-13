@@ -68,12 +68,15 @@ def test_settings_were_loaded_like_production():
 def test_email_backend_is_locmem():
     assert settings.EMAIL_BACKEND == "django.core.mail.backends.locmem.EmailBackend"
 
-
+# Die Sperre wird hier absichtlich ausgelöst; die Warnung ist erwartet.
+# In jedem anderen Test bleibt sie sichtbar und ist dort ein Alarmzeichen.
+@pytest.mark.filterwarnings("ignore:A test tried to use socket")
 def test_raw_socket_is_blocked():
     with pytest.raises(SocketBlockedError):
         socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
+@pytest.mark.filterwarnings("ignore:A test tried to use socket")
 def test_httpx_request_is_blocked():
     # IP statt Hostname: kein DNS-Lookup, der Versuch trifft direkt den Socket.
     with pytest.raises(SocketBlockedError):
