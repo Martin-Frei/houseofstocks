@@ -451,4 +451,4 @@ Before launching paid trading signals: Legal consultation for FinTech/capital ma
 
 ---
 
-*Repository: private · Last updated: August 2026*
+*Repository: puplic · Last updated: October 2026*

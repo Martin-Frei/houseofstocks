@@ -451,4 +451,4 @@ Vor dem Launch bezahlter Handelssignale: Rechtsberatung für FinTech/Kapitalmark
 
 ---
 
-*Repository: privat · Letztes Update: August 2026*
+*Repository: öffentlich · Letztes Update: Oktober 2026*
