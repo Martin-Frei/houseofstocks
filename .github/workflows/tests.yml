@@ -1,0 +1,48 @@
+# .github/workflows/tests.yml
+# CI für HouseofStocks (F-07): alle Tests bei jedem Push auf main und auf ci/**-Zweige.
+# Keine Secrets nötig – settings_test.py setzt Dummy-Werte, --disable-socket sperrt das Netz.
+name: Tests
+
+on:
+  push:
+    branches: [main, "ci/**"]   # main: Pflicht für Railway "Wait for CI"; ci/**: testen ohne Deploy
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read                # nur lesen – der Workflow schreibt nichts ins Repo
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true      # neuer Push auf denselben Zweig bricht den alten Lauf ab
+
+jobs:
+  pytest:
+    name: pytest (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false          # beide Versionen laufen zu Ende, auch wenn eine rot wird
+      matrix:
+        python-version: ["3.11", "3.13"]   # lokal / live – bis F-35 die Version festschreibt
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false   # kein Git-Token im Runner, wir pushen nie aus der CI
+
+      - name: Python ${{ matrix.python-version }} einrichten
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements-test.txt
+            requirements-dev.txt
+
+      - name: Abhängigkeiten installieren
+        run: pip install -r requirements-test.txt
+
+      - name: Tests
+        run: pytest -v --durations=5
