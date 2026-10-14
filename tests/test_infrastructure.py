@@ -68,16 +68,23 @@ def test_settings_were_loaded_like_production():
 def test_email_backend_is_locmem():
     assert settings.EMAIL_BACKEND == "django.core.mail.backends.locmem.EmailBackend"
 
-# Die Sperre wird hier absichtlich ausgelöst; die Warnung ist erwartet.
-# In jedem anderen Test bleibt sie sichtbar und ist dort ein Alarmzeichen.
-@pytest.mark.filterwarnings("ignore:A test tried to use socket")
+
+# Die beiden Tests lösen die Netzsperre absichtlich aus. In jedem anderen Test
+# macht fail_on_blocked_socket (tests/conftest.py) daraus einen Error.
 def test_raw_socket_is_blocked():
-    with pytest.raises(SocketBlockedError):
+    # pytest.warns außen: fängt die Warnung ab (fail_on_blocked_socket sieht sie nicht)
+    # und prüft, dass pytest-socket überhaupt warnt – davon hängt der Wächter ab.
+    with (
+        pytest.warns(UserWarning, match="tried to use socket"),
+        pytest.raises(SocketBlockedError),
+    ):
         socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
-@pytest.mark.filterwarnings("ignore:A test tried to use socket")
 def test_httpx_request_is_blocked():
     # IP statt Hostname: kein DNS-Lookup, der Versuch trifft direkt den Socket.
-    with pytest.raises(SocketBlockedError):
+    with (
+        pytest.warns(UserWarning, match="tried to use socket"),
+        pytest.raises(SocketBlockedError),
+    ):
         httpx.get("http://127.0.0.1:9/", timeout=1)

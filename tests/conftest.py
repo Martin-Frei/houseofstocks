@@ -42,3 +42,13 @@ def ticker():
     ):
         yield SimpleNamespace(processor=processor, view=view, items=TICKER_ITEMS)
         
+@pytest.fixture(autouse=True)
+def fail_on_blocked_socket(recwarn):
+    """Netzsperre ausgelöst = vergessener Mock, auch wenn der Code den Fehler schluckt.
+
+    pytest-socket warnt bei jedem Versuch. Code mit `except Exception` (ticker.py,
+    Health-Check, Fetcher) fängt die Sperre ab, der Test bliebe sonst grün.
+    """
+    yield
+    blocked = [w for w in recwarn if "tried to use socket" in str(w.message)]
+    assert not blocked, f"Netzsperre ausgelöst – Mock vergessen?"
