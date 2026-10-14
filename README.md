@@ -1,5 +1,7 @@
 # HouseofStocks.dev
 
+[![Tests](https://github.com/Martin-Frei/houseofstocks/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Martin-Frei/houseofstocks/actions/workflows/tests.yml)
+
 > **FinTech-Plattform für globale Marktstimmung und Aktienprognosen**  
 > Live: [houseofstocks.dev](https://houseofstocks.dev) · Status: Beta · Seit März 2026
 
